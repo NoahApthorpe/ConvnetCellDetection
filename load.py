@@ -41,7 +41,6 @@ def load_data(directory, image_size=512):
     for fn in file_names:
         stack_name = directory+fn+'.tif'
         roi_name = directory+fn+'.zip'
-        print stack_name, roi_name
         data.append((load_stack(stack_name), load_rois(roi_name, image_size, image_size)))
 
     return data

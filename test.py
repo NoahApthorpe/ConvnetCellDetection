@@ -22,26 +22,6 @@ import numpy as np
 from itertools import chain
 import random
 
-from load import *
-
-class TestSet: 
-    """Stores test set or validation set data and images.
-    
-    self.data   = list of 3D image arrays with dimensions (stack, time, w, h)
-    self.labels = list of 3D ROI arrays with dimensions (stack, ROI index, w, h)
-    Change code so "files" points to the test/validation set
-    """
-    def __init__(self):
-        files = []
-        for j in range(3,5):
-            prefix = 'data/AMG3_exp%d'%(j)
-            files.append( (prefix+'.tif', prefix+'.zip') )
-        self.data = []
-        self.labels = []
-        for i,(s,r) in enumerate(files):
-            self.data.append(load_stack(s))
-            self.labels.append(load_rois(r, 512, 512))
-
 class Score:
     """Class to calculate and store score.
     
