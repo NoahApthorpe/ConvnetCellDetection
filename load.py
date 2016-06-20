@@ -4,10 +4,9 @@
 #
 # Author: Noah Apthorpe
 # 
-# Description: reads all .tif video files and 
-#   ImageJ ROI zip archives (with same names except for extension,
-#   e.g. vid_01.tif, vid_01.zip) in specified directory
-#   to python data structures as follows
+# Description: reads all .tif video files and ImageJ ROI zip archives 
+#   (with same names except for extension, e.g. vid_01.tif, vid_01.zip) 
+#   in specified directory to python data structures as follows
 #   data = [ (video, ROI) ]
 #   video = numpy array [frame #, width pixels, height pixels]
 #   ROI = binary numpy array [ROI #, width pixels, height pixels] 
