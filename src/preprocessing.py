@@ -56,8 +56,8 @@ def save_tifs(data, file_names, directory):
 
 
 if __name__ == "__main__":
-    cfg_parser = SafeConfigParser('config.cfg')
-    directory = cfg_parser.get('general', 'downsampled_directory')
+    cfg_parser = SafeConfigParser('../main_config.cfg')
+    directory = cfg_parser.get('general', 'preprocess_dir')
     img_width = cfg_parser.getfloat('general', 'img_width')
     img_height = cfg_parser.getfloat('general', 'img_height')
     upper_contrast = cfg_parser.getfloat('preprocessing', 'upper_constrast')
