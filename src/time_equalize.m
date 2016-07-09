@@ -38,13 +38,15 @@ min_time_depth = new_time_depth;
 for f=d
     fname = char(f);
 
-    % ignore self and parent links and '.DS_Store' file
-    % NOTE: make this if statement more exclusionary if 
-    %       directory contains additional non-video files
-    if strcmp(fname, '.') || strcmp(fname, '..') || strcmp(fname, '.DS_Store') || strcmp(fname, 'ref')
+    % ignore files without >=3 character extensions
+    if length(fname) < 4
         continue
     end
-    
+    % ignore other non-tiff files
+    if ~strcmpi(fname(end-4:end), '.tiff') && ~strcmpi(fname(end-3:end), '.tif')
+        continue
+    end
+
     % append folder to fname for absolute path 
     fpath = strcat(preprocessed_data_folder,fname);
     
@@ -60,18 +62,20 @@ end
 for f=d
     fname = char(f);
     
-    % ignore self and parent links and '.DS_Store' file
-    % NOTE: make this if statement more exclusionary if 
-    %       directory contains additional non-video files
-    if strcmp(fname, '.') || strcmp(fname, '..') || strcmp(fname, '.DS_Store') || strcmp(fname, 'ref')
+    % ignore files without >=3 character extensions
+    if length(fname) < 4
         continue
     end
-
+    % ignore other non-tiff files
+    if ~strcmpi(fname(end-4:end), '.tiff') && ~strcmpi(fname(end-3:end), '.tif')
+        continue
+    end
+    
     % append folder to fname for absolute path 
     fpath = strcat(preprocessed_data_folder,fname);
     
     % resize one stk
-    time_equalize_one_stk(fpath,new_width,new_height,num2str(min_time_depth));
+    time_equalize_one_stk(fpath,num2str(new_width),num2str(new_height),num2str(min_time_depth));
     MIJ.close();
 end
 

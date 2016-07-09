@@ -57,7 +57,7 @@ for vdir=video_dirs;
         
         % copy roi zip file to output directory
         if strcmpi(fname(end-3:end), '.zip')
-            output_name = strcat(downsampled_dir, '/', vdir_name, '.zip');
+            output_name = strcat(downsampled_dir, vdir_name, '.zip');
             copyfile(fname, output_name);
             continue
         end
@@ -104,7 +104,7 @@ for vdir=video_dirs;
     end
 
     % save resultant downsampled video as a .tif file
-    output_name = strcat(downsampled_dir, '/', vdir_name, '.tif');
+    output_name = strcat(downsampled_dir, vdir_name, '.tif');
     t = Tiff(output_name,'w');
     tagStruct.Photometric = Tiff.Photometric.MinIsBlack;
     tagStruct.BitsPerSample = 32;
