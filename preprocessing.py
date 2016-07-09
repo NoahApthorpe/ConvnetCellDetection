@@ -7,15 +7,17 @@
 # Description: Video contrast improvement
 #   and ROI centroid conversion
 # 
-# Usage: pass data and file_names  from load_data 
-#   in load.py  consecutively to the functions in this
-#   file to produce .tif files ready for ZNN 
+# Usage: run file as executable to 
+#   pass data and file_names from load_data 
+#   in load.py  consecutively to preprocessing
+#   functions to produce .tif files ready for ZNN 
 #
 ###################################################
 
 import numpy as np
 from PIL import Image
 import os.path
+import ConfigParser
 
 def improve_contrast(data, upper_contrast, lower_contrast):
     new_data = []
@@ -52,3 +54,17 @@ def save_tifs(data, file_names, directory):
         im_stk.save(stk_name)
         im_roi.save(roi_name)
 
+
+if __name__ == "__main__":
+    cfg_parser = SafeConfigParser('config.cfg')
+    directory = cfg_parser.get('general', 'downsampled_directory')
+    img_width = cfg_parser.getfloat('general', 'img_width')
+    img_height = cfg_parser.getfloat('general', 'img_height')
+    upper_contrast = cfg_parser.getfloat('preprocessing', 'upper_constrast')
+    lower_contrast = cfg_parser.getfloat('preprocessing', 'lower_constrast')
+    centroid_radius = cfg_parser.getint('preprocessing', 'centroid_radius')
+
+    data, file_names = load_data(directory, img_width, img_height)
+    data = improve_contrast(data, upper_contrast, lower_contrast)
+    data = get_centroids(data, centroid_radius, img_width, img_height)
+    save_tifs(data, file_names, directory)
