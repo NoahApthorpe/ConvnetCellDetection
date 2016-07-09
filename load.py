@@ -11,11 +11,12 @@
 #   video = numpy array [frame #, width pixels, height pixels]
 #   ROI = binary numpy array [ROI #, width pixels, height pixels] 
 #         where 1-valued pixels are in ROI
+#   also returns file_names list s.t. file_names[i] == name of data[i]
 #
 #  Usage: 
 #    import load
-#    data = load_data(directory, image_size=N) 
-#      # N is width and height of video frames in pixels 
+#    data = load_data(directory, img_width=N, img_height=M) 
+#      # N,M is width and height of video frames in pixels 
 #
 ##################################################################
 
@@ -25,7 +26,7 @@ import os
 import os.path
 
 # load video and roi files from argument directory
-def load_data(directory, image_size=512):
+def load_data(directory, img_width, img_height):
     if directory[-1] != os.path.sep:
         directory += os.path.sep
 
@@ -41,9 +42,9 @@ def load_data(directory, image_size=512):
     for fn in file_names:
         stack_name = directory+fn+'.tif'
         roi_name = directory+fn+'.zip'
-        data.append((load_stack(stack_name), load_rois(roi_name, image_size, image_size)))
+        data.append((load_stack(stack_name), load_rois(roi_name, img_width, img_height)))
 
-    return data
+    return data, file_names
 
 
 # tif -> (frame #, width, height)
