@@ -21,6 +21,8 @@
 %     will print to the command window
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+function [] = downsample_tif
+
 % width and height of video frames in pixels
 image_size = 512; 
 
