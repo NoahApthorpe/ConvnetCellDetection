@@ -49,11 +49,20 @@ for vdir=video_dirs;
     d = {d.name};
     for f=d;
         fname = char(f)
-    
-        % ignore non tiff files
+        
+        % ignore files without >=3 character extensions
         if length(fname) < 4
             continue
         end
+        
+        % copy roi zip file to output directory
+        if strcmpi(fname(end-3:end), '.zip')
+            output_name = strcat(downsampled_dir, '/', vdir_name, '.zip');
+            copyfile(fname, output_name);
+            continue
+        end
+        
+        % ignore other non-tiff files
         if ~strcmpi(fname(end-4:end), '.tiff') && ~strcmpi(fname(end-3:end), '.tif')
             continue
         end
