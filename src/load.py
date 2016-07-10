@@ -22,6 +22,7 @@
 
 import numpy as np
 from PIL import Image, ImageDraw
+import tifffile
 import os 
 import os.path
 
@@ -44,11 +45,16 @@ def load_data(directory, img_width, img_height):
         roi_name = directory+fn+'.zip'
         data.append((load_stack(stack_name), load_rois(roi_name, img_width, img_height)))
 
-    return data, file_names
+    return data, list(file_names)
 
 
 # tif -> (frame #, width, height)
 def load_stack(path):
+    with tifffile.TiffFile(path) as im:
+        stk = []
+        im = im.asarray()
+    return np.array(im, dtype='float32')
+"""
     im = Image.open(path)
     stk = []
     while True:
@@ -58,6 +64,7 @@ def load_stack(path):
         except EOFError:
             break
     return np.array(stk, dtype='float32')
+"""
 
 # roi zip -> (roi #, width, height)
 def load_rois(path, width, height, fill=1, xdisp=0, ydisp=0):
@@ -181,6 +188,3 @@ def read_roi_zip(fname):
     with zipfile.ZipFile(fname) as zf:
         return [read_roi(zf.open(n))
                     for n in zf.namelist()]
-
-
-j = load_data("../NeuronSegmentation/deepmau5/data/all_jan_data")

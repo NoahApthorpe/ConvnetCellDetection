@@ -15,15 +15,18 @@
 ###################################################
 
 import numpy as np
-from PIL import Image
+import skimage.io
 import os.path
+from load import load_data
+import tifffile
+from PIL import Image
 import ConfigParser
 
 def improve_contrast(data, upper_contrast, lower_contrast):
     new_data = []
     for i, (stk,roi) in enumerate(data):
         low_p = np.percentile(stk.flatten(), lower_contrast)
-        high_p = np.percentile(stk.flatten(), upper_constrast)
+        high_p = np.percentile(stk.flatten(), upper_contrast)
         new_stk = np.clip(stk, low_p, high_p)
         new_stk = new_stk - new_stk.mean()
         new_stk = np.divide(new_stk-np.min(new_stk), np.max(new_stk) - np.min(new_stk))
@@ -33,7 +36,7 @@ def improve_contrast(data, upper_contrast, lower_contrast):
 def get_centroids(data, radius, img_width, img_height): 
     new_data = []
     for j,(stk, rois) in enumerate(data):
-        new_rois = np.zeros(rois.shape)
+        new_rois = np.zeros(rois.shape, dtype='float32') # MAYBE NOT NECESSARY TO CAST
         for i,r in enumerate(rois):  
             cx,cy = np.where(r!=0)                                                  
             cx,cy = int(cx.mean()), int(cy.mean())  
@@ -47,24 +50,38 @@ def save_tifs(data, file_names, directory):
     if directory[-1] != os.path.sep:
         directory += os.path.sep
     for i,(stk,roi) in enumerate(data):
+        stk = np.mean(stk, 0)
+        print stk.shape
+        print roi.dtype
+        skimage.io.imshow(stk)
         stk_name = directory + file_names[i] + ".tif"
-        roi_name = directory + file_names[i] + ".tif"
-        im_stk = Image.fromarray(stk.squeeze())
-        im_roi = Image.fromarray(roi)
-        im_stk.save(stk_name)
-        im_roi.save(roi_name)
+        roi_name = directory + file_names[i] + "_ROI.tif"
+        #tifffile.imsave(stk_name, stk.squeeze())
+        #tifffile.imsave(roi_name, roi)
+        skimage.io.imsave(stk_name, stk.squeeze())
+        skimage.io.imsave(roi_name, roi)
+        #im_stk = Image.fromarray(stk.squeeze())
+        #im_roi = Image.fromarray(roi)
+        #im_stk.save(stk_name)
+        #im_roi.save(roi_name)
 
 
 if __name__ == "__main__":
-    cfg_parser = SafeConfigParser('../main_config.cfg')
-    directory = cfg_parser.get('general', 'preprocess_dir')
-    img_width = cfg_parser.getfloat('general', 'img_width')
-    img_height = cfg_parser.getfloat('general', 'img_height')
-    upper_contrast = cfg_parser.getfloat('preprocessing', 'upper_constrast')
-    lower_contrast = cfg_parser.getfloat('preprocessing', 'lower_constrast')
+    cfg_parser = ConfigParser.SafeConfigParser()
+    cfg_parser.readfp(open('./main_config.cfg', 'r'))
+        
+    preprocess_directory = cfg_parser.get('general', 'preprocess_dir')
+    downsample_directory = cfg_parser.get('general', 'downsample_dir')
+    img_width = cfg_parser.getint('general', 'img_width')
+    img_height = cfg_parser.getint('general', 'img_height')
+    upper_contrast = cfg_parser.getfloat('preprocessing', 'upper_contrast')
+    lower_contrast = cfg_parser.getfloat('preprocessing', 'lower_contrast')
     centroid_radius = cfg_parser.getint('preprocessing', 'centroid_radius')
 
-    data, file_names = load_data(directory, img_width, img_height)
+    if not os.path.isdir(preprocess_directory):
+        os.mkdir(preprocess_directory)
+
+    data, file_names = load_data(downsample_directory, img_width, img_height)
     data = improve_contrast(data, upper_contrast, lower_contrast)
     data = get_centroids(data, centroid_radius, img_width, img_height)
-    save_tifs(data, file_names, directory)
+    save_tifs(data, file_names, preprocess_directory)
