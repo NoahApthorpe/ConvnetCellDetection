@@ -50,21 +50,12 @@ def save_tifs(data, file_names, directory):
     if directory[-1] != os.path.sep:
         directory += os.path.sep
     for i,(stk,roi) in enumerate(data):
-        stk = np.mean(stk, 0)
-        print stk.shape
-        print roi.dtype
-        skimage.io.imshow(stk)
+        roi = roi.max(axis=0)
         stk_name = directory + file_names[i] + ".tif"
         roi_name = directory + file_names[i] + "_ROI.tif"
-        #tifffile.imsave(stk_name, stk.squeeze())
-        #tifffile.imsave(roi_name, roi)
-        skimage.io.imsave(stk_name, stk.squeeze())
-        skimage.io.imsave(roi_name, roi)
-        #im_stk = Image.fromarray(stk.squeeze())
-        #im_roi = Image.fromarray(roi)
-        #im_stk.save(stk_name)
-        #im_roi.save(roi_name)
-
+        tifffile.imsave(stk_name, stk.squeeze())
+        tifffile.imsave(roi_name, roi)
+        
 
 if __name__ == "__main__":
     cfg_parser = ConfigParser.SafeConfigParser()
