@@ -1,0 +1,3 @@
+[submodule "znn"]
+	path = znn
+	url = https://github.com/seung-lab/znn-release.git
