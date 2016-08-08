@@ -1,3 +1,17 @@
+###########################################################
+#
+# ConvNet Output Postprocessing
+#
+# Author: Noah Apthorpe
+#
+# Description: Thresholding, watershedding, and Magic Wand tool
+#     postprocessing to convert network output probability 
+#     maps to detected ROIs
+# 
+# Usage: 
+#
+############################################################
+
 from PIL import Image
 import numpy as np
 from scipy import ndimage as ndi
@@ -14,14 +28,19 @@ import itertools
 import os
 import os.path
 import cPickle as pickle
+import ConfigParser
 from load import *
 from test import Score
 
 
-def read_network_output(d):
+def add_path_sep(directory):
+    return directory[-1] == os.path.sep ? directory : directory + os.path.sep
+
+
+def read_network_output(directory):
     images = []
-    for fname in os.listdir(d):
-        f = d + fname
+    for fname in os.listdir(directory):
+        f = directory + fname
         if not f.endswith(".tif"): continue
         if not int((f.partition("output_")[2]).partition(".tif")[0]) == 0: continue
         sample_num = int((f.partition("sample")[2]).partition("_")[0])
@@ -35,8 +54,7 @@ def read_network_output(d):
 def watershed_centroids(labels):
     new_markers = np.zeros(labels.shape)
     for label in set(labels.flatten()):
-        cx,cy = np.where(labels == label)                                                                   
-        cx,cy = int(cx.mean()), int(cy.mean()) 
+        cx,cy = np.where(labels == label)                                                                 cx,cy = int(cx.mean()), int(cy.mean()) 
         new_markers[cx,cy] = label
     return new_markers
 
@@ -93,14 +111,14 @@ def sort_clockwise(edges):
 def edge_file_to_rois(fname, size=512):
     f = open(fname, 'r')
     rois = []
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.set_xbound(lower=0,upper=512)
-    ax.set_ybound(lower=0,upper=512)
-    ax.invert_yaxis()
-    ax.set_aspect('equal')
-    ax.xaxis.set_ticks_position('none')
-    ax.yaxis.set_ticks_position('none')
+    #fig = plt.figure()
+    #ax = fig.add_subplot(111)
+    #ax.set_xbound(lower=0,upper=512)
+    #ax.set_ybound(lower=0,upper=512)
+    #ax.invert_yaxis()
+    #ax.set_aspect('equal')
+    #ax.xaxis.set_ticks_position('none')
+    #ax.yaxis.set_ticks_position('none')
     for ln,line in enumerate(f):
         #print ln
         nroi = np.zeros((size,size))
@@ -111,43 +129,101 @@ def edge_file_to_rois(fname, size=512):
             edges[i,0] = int(x)
             edges[i,1] = int(y)
         edges = sort_clockwise(edges)
-        path = Path(edges)  
-        patch = patches.PathPatch(path, facecolor='none', lw=0.6)
-        ax.add_patch(patch)
+        #path = Path(edges)  
+        #patch = patches.PathPatch(path, facecolor='none', lw=0.6)
+        #ax.add_patch(patch)
         mask = grid_points_in_poly((size,size), edges).astype(np.float32)
         nm = np.zeros(mask.shape)
         for x,y in itertools.product(range(size), range(size)):
             nm[x,y] = mask[y,x]
         rois.append(nm) #np.flipud(np.rot90(mask.astype(np.float32))))# np.flipud(np.rot90(nroi))) #mask.astype(np.float32))
 
-    #plt.axis('off')    
-    plt.savefig("../../ZZZ.png",bbox_inches='tight', dpi=200, pad_inches=0)
-    plt.show()
+    #plt.savefig("../../ZZZ.png",bbox_inches='tight', dpi=200, pad_inches=0)
+    #plt.show()
     return np.array(rois)
 
 
-def postprocessing(directory, threshold, min_size_watershed, merge_size_watershed, min_size_wand, max_size_wand, border):
-    if directory[-1] != os.path.sep:
-        directory += os.path.sep
-    params_directory = directory + "params" + os.path.sep
-    if not os.path.isdir(params_directory):
-        os.mkdir(params_directory)
+def postprocessing(preprocess_directory, network_output_directory, postprocess_directory, 
+                   threshold, min_size_watershed, merge_size_watershed, 
+                   min_size_wand, max_size_wand, border):
+    
+    # create directory for magic wand parameters and edge output
+    magicwand_directory = postprocess_directory + "magicwand" + os.path.sep
+    if not os.path.isdir(magicwand_directory):
+        os.mkdir(magicwand_directory)
 
-    full_sp, sn = read_network_output(directory)
-    markers, labels = zip(*[find_neuron_centers(d, threshold, min_size_watershed, merge_size_watershed) for d in full_sp])
-    for i in range(len(sn)):
-        markers_to_param_file(markers[i], min_size_wand, max_size_wand, params_directory+"params"+str(sn[i])+".txt", border)
+    # convert probability maps into neuron centers
+    images, sample_numbers = read_network_output(directory)
+    markers, labels = zip(*[find_neuron_centers(im, threshold, min_size_watershed, 
+                                                merge_size_watershed) for im in images])
+    
+    # write parameter files for magic wand tool
+    for i in range(len(sample_numbers)):
+        magicwand_params_fn = magicwand_directory + str(sample_numbers[i])+".txt"
+        markers_to_param_file(markers[i], min_size_wand, max_size_wand, 
+                              magicwand_params_fn, border)
 
-    process = subprocess.Popen("java -cp /Users/noahapthorpe/Documents/NeuronSegmentation/deepmau5/src/cellMagicWand MagicWand /Users/noahapthorpe/Documents/NeuronSegmentation/znn/all_jan_data/full_jan_sp/ 29 /Users/noahapthorpe/Documents/NeuronSegmentation/znn/full_jan_sp/fwd/params/", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # run magic wand tool
+    magicwand_classpath = "./src/cellMagicWand"
+    magicwand_command = " ".join(["java -cp", magicwand_classpath, "MagicWand", 
+                                  preprocess_directory, len(sample_numbers), magicwand_directory])
+    process = subprocess.Popen(magicwand_command, shell=True, 
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
     print stderr
     
-    for fn in os.listdir(params_directory):
+    # convert magic wand output into ROIs
+    for fn in os.listdir(magicwand_directory):
         rois = []
         if os.path.basename(fn).find('edges') != -1:
-            rois.append(edge_file_to_rois(params_directory + fn))
-
+            rois.append(edge_file_to_rois(magicwand_directory + fn))
     return rois
+    
+
+if __name__ == "__main__":
+    cfg_parser = ConfigParser.SafeConfigParser()
+    cfg_parser.readfp(open('./main_config.cfg','r'))
+
+    # read general parameters
+    preprocess_directory = add_path_sep(cfg_parser.get('general', 'preprocess_directory'))
+    network_output_directory = add_path_sep(cfg_parser.get('general', 'network_output_dir'))
+    postprocess_directory = add_path_sep(cfg_parser.get('general', 'postprocess_dir'))
+    img_width = cfg_parser.getint('general','img_width')
+    img_height = cfg_parser.getint('general', 'img_height')
+    field_of_view = cfg_parser.getint('network', 'field_of_view')
+    do_gridsearch_postprocess_params = cfg_parser.getboolean('general', 'do_gridsearch_postprocess_params')
+    if not os.path.isdir(postprocess_directory):
+        os.mkdir(postprocess_directory)
+
+    # locate postprocessing parameters or run grid search optimization
+    params_cfg_parser = ConfigParser.SafeConfigParser()
+    if do_gridsearch_postprocess_params:
+        params_cfg = postprocess_directory+"optimized_postprocess_params.cfg"
+        if not os.path.isfile(params_cfg):
+            parameter_optimization(postprocess_directory, params_cfg)
+    else:
+        params_cfg = "./main_config.cfg"
+    params_cfg_parser.readfp(params_cfg)
+
+    # read postprocessing-specific parameters
+    threshold = params_cfg_parser.getfloat('postprocessing', 'probability_threshold')
+    min_size_watershed = params_cfg_parser.getfloat('postprocessing', 'min_size_watershed')
+    merge_size_watershed = params_cfg_parser.getfloat('postprocessing', 'merge_size_watershed')
+    max_footprint_str = params_cfg_parser.get('postprocessing', 'max_footprint')
+    max_footprint = tuple([int(c) for c in max_footprint_str.strip().split(",")])
+    assert(len(max_footprint) == 2
+    min_size_wand = params_cfg_parser.getfloat('postprocessing', 'min_size_wand')
+    max_size_wand = params_cfg_parser.getfloat('postprocessing', 'max_size_wand')
+    border = field_of_view/2
+
+    # run postprocessing
+    final_rois = postprocessing(preprocess_directory, network_output_directory, 
+                                postprocess_directory, threshold, 
+                                min_size_watershed, merge_size_watershed, max_footprint,
+                                min_size_wand, max_size_wand, border)
+
+    # save final ROIs
+    save_tifs()
 
 
 def parameter_optimization():
