@@ -1,48 +1,41 @@
 import cellMagicWand.CommandLine;
+import java.io.File;
+import java.util.ArrayList;
 
 public class MagicWand {
 
     public static void main(String[] args) {
 	String photo_dir = args[0];
-	int num_photos = Integer.parseInt(args[1]);
-	String[] photo_names = val_names(photo_dir, num_photos, "stk", ".tif");
-	String params_dir = args[2];
-	String[] params_names = val_names(params_dir, num_photos, "params", ".txt");
-	String[] edges_names = val_names(params_dir, num_photos, "edges", ".txt");
+	String params_dir = args[1];
+	File photo_dir_f = new File(photo_dir);
+	File params_dir_f = new File(params_dir);
+
+	File[] params_names_f = params_dir_f.listFiles();
+	ArrayList<String> photo_names = new ArrayList<String>();
+	ArrayList<String> params_names = new ArrayList<String>();
+	ArrayList<String> edges_names = new ArrayList<String>();
+	for (File f : params_names_f) {
+		try{
+			String name = f.getName();
+			String name_noext = name.substring(0, name.lastIndexOf('.'));
+			String ext = name.substring(name.lastIndexOf('.'), name.length());
+			if (!ext.equals(".txt")) continue;
+			photo_names.add(photo_dir + name_noext + ".tif");
+			params_names.add(params_dir + name_noext + ".txt");
+			edges_names.add(params_dir + name_noext + "_edges.txt");
+		} catch (IndexOutOfBoundsException e) {e.printStackTrace();}
+	}
 	
-	assert(photo_names.length == params_names.length && photo_names.length == edges_names.length);
+	assert(photo_names.size() == params_names.size() && photo_names.size() == edges_names.size());
 
-	for(int i = 0; i < photo_names.length; i++) {
+	for(int i = 0; i < photo_names.size(); i++) {
 	    String[] a = new String[3];
-	    a[0] = photo_names[i];
-	    a[1] = params_names[i];
-	    a[2] = edges_names[i];
-	    try {
+	    a[0] = photo_names.get(i);
+	    a[1] = params_names.get(i);
+	    a[2] = edges_names.get(i);
+	    //try {
 		CommandLine cl = new CommandLine(a);
-	    } catch (Exception e) {}
+	    //} catch (Exception e) {e.printStackTrace();}
 	}
-    }
-
-    private static String[] val_names(String dir, int num, String prefix, String ext) {
-	//String[] nums = {"1","3","19","24","26"};
-	//String[] nums = {"2","7","16","25","28"};
-	//String[] nums = {"1","2","3","7","16","19","24","25","26","28"};
-	//String[] nums = {"4", "6", "7", "9", "10"};
-	String[] nums = {"3", "19", "26"};
-
-	String[] names = new String[3];
-	for(int i = 0; i < 3; i++) {
-	    names[i] = dir + prefix + nums[i] + ext;
-	}
-	return names;
-    
-    }
-
-    private static String[] make_names(String dir, int num, String prefix, String ext) {
-	String[] names = new String[num];
-	for(int i = 0; i < num; i++) {
-	    names[i] = dir + prefix + (i+1) + ext;
-	}
-	return names;
     }
 }
