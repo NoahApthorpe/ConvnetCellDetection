@@ -1,0 +1,30 @@
+   var dCmds = newMenu("Developer Menu Tool",
+      newArray("ImageJ Website","News", "Documentation", "Resources", "Macro Language", "Macros", 
+      "Macro Functions", "Startup Macros...", "Plugins", "Source Code", "-", "Record...", 
+      "Capture Screen ", "Monitor Memory...", "Find Commands...", "Search...", "Debug Mode"));
+      
+   macro "Developer Menu Tool - C037T0b11DT9b10eTfb10v" {
+       cmd = getArgument();
+       if (cmd=="ImageJ Website")
+           run("URL...", "url=http://imagej.nih.gov/ij/");
+       else if (cmd=="News")
+           run("URL...", "url=http://imagej.nih.gov/ij/notes.html");
+       else if (cmd=="Documentation")
+           run("URL...", "url=http://imagej.nih.gov/ij/docs/");
+       else if (cmd=="Resources")
+           run("URL...", "url=http://imagej.nih.gov/ij/developer/");
+       else if (cmd=="Macro Language")
+           run("URL...", "url=http://imagej.nih.gov/ij/developer/macro/macros.html");
+       else if (cmd=="Macros")
+           run("URL...", "url=http://imagej.nih.gov/ij/macros/");
+        else if (cmd=="Macro Functions")
+           run("URL...", "url=http://imagej.nih.gov/ij/developer/macro/functions.html");
+        else if (cmd=="Plugins")
+           run("URL...", "url=http://imagej.nih.gov/ij/plugins/");
+        else if (cmd=="Source Code")
+           run("URL...", "url=http://imagej.nih.gov/ij/developer/source/");
+        else if (cmd=="Debug Mode")
+           setOption("DebugMode", true);
+	 else if (cmd!="-")
+            run(cmd);
+   }
