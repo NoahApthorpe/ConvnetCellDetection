@@ -8,7 +8,7 @@
 %     and time_equalize functions on all specified data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-cfg_file = './main_config.cfg';
+cfg_file = '../main_config_ar.cfg';
 cfg_parameters = cfg2struct(cfg_file);
 data_dir = cfg_parameters.general.data_dir;
 img_width = cfg_parameters.general.img_width;

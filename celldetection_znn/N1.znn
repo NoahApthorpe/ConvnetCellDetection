@@ -1,0 +1,40 @@
+nodes input
+type input
+size 1
+
+edges conv1
+type conv
+init msra
+size 1,5,5
+stride 1,1,1
+input input
+output nconv1
+
+nodes nconv1
+type transfer
+function rectify_linear
+size 1
+
+edges pool1
+type max_filter
+size 10,1,1
+stride 10,1,1
+input nconv1
+output npool1
+
+nodes npool1
+type sum 
+size 1
+
+edges conv5
+type conv
+size 1,1,1
+init msra   
+stride 1,1,1
+input npool1
+output output
+
+nodes output
+type transfer
+function linear
+size 2

@@ -59,7 +59,7 @@ def save_tifs(data, file_names, directory):
 
 if __name__ == "__main__":
     cfg_parser = ConfigParser.SafeConfigParser()
-    cfg_parser.readfp(open('./main_config.cfg', 'r'))
+    cfg_parser.readfp(open('../main_config_ar.cfg', 'r'))
         
     preprocess_directory = cfg_parser.get('general', 'preprocess_dir')
     downsample_directory = cfg_parser.get('general', 'downsample_dir')
