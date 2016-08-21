@@ -2,7 +2,7 @@
 #
 # Video and ROI preprocessing functions
 #
-# Author: Noah Apthorpe
+# Authors: Noah Apthorpe and Alex Riordan
 #
 # Description: Video contrast improvement
 #   and ROI centroid conversion
@@ -55,7 +55,60 @@ def save_tifs(data, file_names, directory):
         roi_name = directory + file_names[i] + "_ROI.tif"
         tifffile.imsave(stk_name, stk.squeeze())
         tifffile.imsave(roi_name, roi)
-        
+
+# TODO: add methods to main below, test
+
+'''
+ is_labeled()
+ Checks if directory is named "labeled"
+'''
+def is_labeled(dir_path):
+    if dir_path.split('/')[-1] == 'labeled':
+        return True
+    return False 
+
+'''
+ get_labeled_split_paths()
+ Builds and returns a dict of the train/test/val split given in split_dir
+ Keys of dict are fnames, values are one of ['training', 'test', 'val']
+'''
+def get_labeled_split(already_split_dir):
+    if already_split_dir[-1] != '/':
+            already_split_dir += '/'
+    split_dict = dict()
+    subdir_list = ['training', 'test', 'validation']
+    for subdir in subdir_list:
+        files = os.listdir(already_split_dir + subdir) # get files in subdir
+        remove_ds_store(files)
+        split_dict.update(dict.fromkeys(files,subdir)) # add each file as key in split_dict, with value subdir name
+    return split_dict 
+
+'''
+ impose_split_on_labeled_directory()
+ Moves files from dir_to_split into newly created train, test, and validation subdirectories in dir_to_split
+ Files go to a particular subdirectory based on split_dict dictionary
+ is_ROI_tif should be true when ROI labels in directory are tif files, not zip files
+'''
+def split_labeled_directory(split_dict, dir_to_split,is_ROI_tif):
+    if dir_to_split[-1] != '/':
+            dir_to_split += '/'
+    for subdir in split_dict.itervalues():
+        subdir_path = dir_to_split + subdir 
+        if not os.path.exists(subdir_path):
+            os.makedirs(subdir_path)
+    for fname, subdir in split_dict.items():
+        if is_ROI_tif:
+            fname = fname.replace(".zip","_ROI.tif")
+        try : 
+            os.rename(dir_to_split + fname, dir_to_split + subdir + '/' + fname) # move fname into new subdir
+        except AssertionError:
+            print fname, ' was not found in ', dir_to_split, ' while attempting to maintain training/test/validation split'
+
+def remove_ds_store(file_list):
+    try:
+        file_list.remove('.DS_Store')
+    except ValueError:
+        pass
 
 if __name__ == "__main__":
     cfg_parser = ConfigParser.SafeConfigParser()
@@ -63,16 +116,25 @@ if __name__ == "__main__":
         
     preprocess_directory = cfg_parser.get('general', 'preprocess_dir')
     downsample_directory = cfg_parser.get('general', 'downsample_dir')
+    data_directory = cfg_parser.get('general', 'data_dir')
     img_width = cfg_parser.getint('general', 'img_width')
     img_height = cfg_parser.getint('general', 'img_height')
+    do_downsample = cfg_parser.getboolean('general', 'do_downsample')
     upper_contrast = cfg_parser.getfloat('preprocessing', 'upper_contrast')
     lower_contrast = cfg_parser.getfloat('preprocessing', 'lower_contrast')
     centroid_radius = cfg_parser.getint('preprocessing', 'centroid_radius')
-
+    
+    
     if not os.path.isdir(preprocess_directory):
         os.mkdir(preprocess_directory)
-
+    
     data, file_names = load_data(downsample_directory, img_width, img_height)
     data = improve_contrast(data, upper_contrast, lower_contrast)
     data = get_centroids(data, centroid_radius, img_width, img_height)
     save_tifs(data, file_names, preprocess_directory)
+    
+    if is_labeled(data_directory) :
+        split_dict = get_labeled_split(data_directory)
+        split_labeled_directory(split_dict, preprocess_directory, True)
+        if do_downsample :
+            split_labeled_directory(split_dict, downsample_directory, False)
