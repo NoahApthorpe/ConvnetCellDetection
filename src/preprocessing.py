@@ -91,19 +91,23 @@ def get_labeled_split(already_split_dir):
 '''
 def split_labeled_directory(split_dict, dir_to_split,is_ROI_tif):
     if dir_to_split[-1] != '/':
-            dir_to_split += '/'
+        dir_to_split += '/'
+    label_dir_path = dir_to_split + 'labeled'
+    if not os.path.exists(label_dir_path):
+        os.makedirs(label_dir_path)
     for subdir in split_dict.itervalues():
-        subdir_path = dir_to_split + subdir 
+        subdir_path = dir_to_split + 'labeled/' + subdir 
         if not os.path.exists(subdir_path):
             os.makedirs(subdir_path)
     for fname, subdir in split_dict.items():
         if is_ROI_tif:
             fname = fname.replace(".zip","_ROI.tif")
         try : 
-            os.rename(dir_to_split + fname, dir_to_split + subdir + '/' + fname) # move fname into new subdir
+            os.rename(dir_to_split + fname, dir_to_split + 'labeled/' + subdir + '/' + fname) # move fname into new subdir
         except AssertionError:
             print fname, ' was not found in ', dir_to_split, ' while attempting to maintain training/test/validation split'
-
+    
+    
 def remove_ds_store(file_list):
     try:
         file_list.remove('.DS_Store')
