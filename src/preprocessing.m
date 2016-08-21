@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Matlab preprocessing pipeline
 %
-% Author: Noah Apthorpe
+% Authors: Noah Apthorpe and Alex Riordan
 % 
 % Description: script that reads parameters from
 %     configuration file and runs the downsample_tif
@@ -30,19 +30,34 @@ if ~exist(downsampled_dir, 'dir')
     mkdir(downsampled_dir);
 end
 
-if do_downsample
-    downsample_tif(data_dir, downsampled_dir, img_width, img_height,  mean_proj_bin, max_proj_bin);
+%This fixes the time_equalize issue, but not downsample_tif
+data_subdirs = strsplit('/',data_dir);
+if strcmp(data_subdirs{end-1},'labeled')
+    training_dir = strcat(data_dir,'training');
+    test_dir = strcat(data_dir,'test');
+    validation_dir = strcat(data_dir,'validation');
+    if do_downsample
+        downsample_tif(training_dir, downsampled_dir, img_width, img_height,  mean_proj_bin, max_proj_bin);
+        downsample_tif(test_dir, downsampled_dir, img_width, img_height,  mean_proj_bin, max_proj_bin);
+        downsample_tif(validation_dir, downsampled_dir, img_width, img_height,  mean_proj_bin, max_proj_bin);
+    else 
+        copyfile(training_dir, downsampled_dir);
+        copyfile(test_dir, downsampled_dir);
+        copyfile(validation_dir, downsampled_dir);
+    end 
 else
-    copyfile(data_dir, downsampled_dir);
-end
-
+    if do_downsample
+        downsample_tif(data_dir, downsampled_dir, img_width, img_height,  mean_proj_bin, max_proj_bin);
+    else
+        copyfile(data_dir, downsampled_dir);
+    end
+end 
 time_equalize(downsampled_dir, img_width, img_height, new_time_depth);
 
-
-
-
-
-
-
-
-
+% if do_downsample
+%     downsample_tif(data_dir, downsampled_dir, img_width, img_height,  mean_proj_bin, max_proj_bin);
+% else
+%     copyfile(data_dir, downsampled_dir);
+% end
+% 
+% time_equalize(downsampled_dir, img_width, img_height, new_time_depth);

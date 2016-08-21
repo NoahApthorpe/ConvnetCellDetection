@@ -19,7 +19,7 @@ import ConfigParser
  will also cause issues if files aren't .tif 
 '''
 
-def create_dataset_spec(fname, preprocess_directory):
+def create_dataset_spec(fname, preprocess_directory, docker_directory):
     f = open(fname,'w+') 
     
     files = os.listdir(preprocess_directory) # get files in preprocess_dir
@@ -30,8 +30,6 @@ def create_dataset_spec(fname, preprocess_directory):
     
     files = [x for x in files if "_ROI." not in x] # remove all filenames with '_ROI.'
     files = [x.replace('.tif','') for x in files] # remove .tif file extension
-    
-    docker_directory = update_path_for_Docker_mount(preprocess_directory)
     
     s = ''
     #Iterate over remaining list, and use entries for stk and ROI fnames. Write dataset.spec file.
@@ -90,6 +88,8 @@ if __name__ == "__main__":
     img_width = cfg_parser.getint('general', 'img_width')
     img_height = cfg_parser.getint('general', 'img_height')
     
+    docker_directory = update_path_for_Docker_mount(preprocess_directory)
+    
     '''Create znn files'''
     dataspec_path = '../celldetection_znn/dataset.spec'
-    create_dataset_spec(dataspec_path, preprocess_directory)
+    create_dataset_spec(dataspec_path, preprocess_directory, docker_directory)
