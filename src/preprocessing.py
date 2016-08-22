@@ -56,8 +56,6 @@ def save_tifs(data, file_names, directory):
         tifffile.imsave(stk_name, stk.squeeze())
         tifffile.imsave(roi_name, roi)
 
-# TODO: add methods to main below, test
-
 '''
  is_labeled()
  Checks if directory is named "labeled"
@@ -92,22 +90,26 @@ def get_labeled_split(already_split_dir):
 def split_labeled_directory(split_dict, dir_to_split,is_ROI_tif):
     if dir_to_split[-1] != '/':
         dir_to_split += '/'
-    label_dir_path = dir_to_split + 'labeled'
-    if not os.path.exists(label_dir_path):
-        os.makedirs(label_dir_path)
     for subdir in split_dict.itervalues():
-        subdir_path = dir_to_split + 'labeled/' + subdir 
+        subdir_path = dir_to_split + subdir 
         if not os.path.exists(subdir_path):
             os.makedirs(subdir_path)
     for fname, subdir in split_dict.items():
         if is_ROI_tif:
             fname = fname.replace(".zip","_ROI.tif")
         try : 
-            os.rename(dir_to_split + fname, dir_to_split + 'labeled/' + subdir + '/' + fname) # move fname into new subdir
+            os.rename(dir_to_split + fname, dir_to_split + subdir + '/' + fname) # move fname into new subdir
         except AssertionError:
             print fname, ' was not found in ', dir_to_split, ' while attempting to maintain training/test/validation split'
     
-    
+def put_labeled_at_end_of_path_if_not_there(fpath) : 
+    if fpath[-1] == '/':
+        fpath = fpath[:-1]
+    if not is_labeled(fpath):
+        return fpath + '/labeled'
+    else:
+        return fpath
+
 def remove_ds_store(file_list):
     try:
         file_list.remove('.DS_Store')
@@ -128,9 +130,15 @@ if __name__ == "__main__":
     lower_contrast = cfg_parser.getfloat('preprocessing', 'lower_contrast')
     centroid_radius = cfg_parser.getint('preprocessing', 'centroid_radius')
     
+    # add '/labeled' to preprocess_dir in main config file if data_dir ends with '/labeled'
+    if is_labeled(data_directory) and not is_labeled(preprocess_directory):
+        preprocess_directory = put_labeled_at_end_of_path_if_not_there(preprocess_directory)
+        cfg_parser.set('general','preprocess_dir',preprocess_directory)
+        with open('../main_config_ar.cfg', 'wb') as configfile:
+            cfg_parser.write(configfile)
     
     if not os.path.isdir(preprocess_directory):
-        os.mkdir(preprocess_directory)
+        os.makedirs(preprocess_directory)
     
     data, file_names = load_data(downsample_directory, img_width, img_height)
     data = improve_contrast(data, upper_contrast, lower_contrast)
