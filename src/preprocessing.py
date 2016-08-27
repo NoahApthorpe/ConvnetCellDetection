@@ -116,7 +116,9 @@ def remove_ds_store(file_list):
     except ValueError:
         pass
 
+
 if __name__ == "__main__":
+    '''Get user-specified information from main_config.cfg'''
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open('../main_config_ar.cfg', 'r'))
         
@@ -130,7 +132,7 @@ if __name__ == "__main__":
     lower_contrast = cfg_parser.getfloat('preprocessing', 'lower_contrast')
     centroid_radius = cfg_parser.getint('preprocessing', 'centroid_radius')
     
-    # add '/labeled' to preprocess_dir in main config file if data_dir ends with '/labeled'
+    '''add '/labeled' to preprocess_dir in main config file if data_dir ends with '/labeled' '''
     if is_labeled(data_directory) and not is_labeled(preprocess_directory):
         preprocess_directory = put_labeled_at_end_of_path_if_not_there(preprocess_directory)
         cfg_parser.set('general','preprocess_dir',preprocess_directory)
@@ -140,11 +142,13 @@ if __name__ == "__main__":
     if not os.path.isdir(preprocess_directory):
         os.makedirs(preprocess_directory)
     
+    '''Run actual preprocessing'''
     data, file_names = load_data(downsample_directory, img_width, img_height)
     data = improve_contrast(data, upper_contrast, lower_contrast)
     data = get_centroids(data, centroid_radius, img_width, img_height)
     save_tifs(data, file_names, preprocess_directory)
     
+    '''Impose training/test/validation split on preprocess_dir and downsample_dir'''
     if is_labeled(data_directory) :
         split_dict = get_labeled_split(data_directory)
         split_labeled_directory(split_dict, preprocess_directory, True)
