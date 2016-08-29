@@ -106,9 +106,9 @@ def create_znn_config_file(output_dir, train_indices, val_indices, forward_indic
     znn_cfg_parser.set('parameters', 'Num_iter_per_save', num_iter_per_save)
     znn_cfg_parser.set('parameters', 'max_iter', max_iter)
     znn_cfg_parser.set('parameters', 'forward_range', forward_indices) #autoset as everything in input_dir
-    znn_cfg_parser.set('parameters', 'forward_net', forward_net)
+    znn_cfg_parser.set('parameters', 'forward_net', dockerize_path(forward_net))
     znn_cfg_parser.set('parameters', 'forward_outsz', forward_outsz) #TODO: calculate forward_outsz automatically, based on field of view
-    znn_cfg_parser.set('parameters', 'output_prefix', net_arch_fpath[:-4])
+    znn_cfg_parser.set('parameters', 'output_prefix', dockerize_path(net_arch_fpath[:-4]))
     with open(znn_config_path, 'wb') as configfile:
         znn_cfg_parser.write(configfile)
 
@@ -143,20 +143,48 @@ def get_train_val_forward_split_indices_as_str(file_dict) :
         forward_indices = forward_indices[:-1]
     return train_indices, val_indices, forward_indices
 
-def copy_template_network_file():
-    pass
 
-def modify_network_conv_filter_size():
-    pass
-
+def copy_net_and_set_conv_filter_size(net_arch_fpath, new_net_fpath, filter_size):
+    #write each line from orig. network to new_net_fpath, changing only lines with conv filter
+    with open(net_arch_fpath) as orig_net, open(new_net_fpath, 'w') as new_net:
+        is_conv = False
+        past_fcedges = False
+        for line in orig_net:
+            if 'fcedges' in line:
+                past_fcedges = True
+            if 'type conv' in line and not past_fcedges:
+                is_conv = True
+            if 'size' in line and is_conv and not past_fcedges:
+                new_net.write('size 1,' + filter_size + ',' + filter_size + '\n')
+                is_conv = False
+            else:
+                new_net.write(line)  
+    
 '''
+Changes z size and stride of final max filter in a network file
 '''
-def modify_network_3D_to_2D_squashing_filter_size(net_file, filter_size):
-    #find lines corresponding to squashing filter (search for first line that says "type max_filter")
-    #below that are size Z,1,1 and
-    # stride Z,1,1
-    #we can assume that a (2+1)D network check has been run
-    pass
+def set_network_3D_to_2D_squashing_filter_size(new_net_fpath, filter_size):
+    with open(new_net_fpath, 'r') as net_file:
+        all_lines = net_file.readlines()
+        #find index of file line that contains 'type max_filter'
+        for i in range(len(all_lines) - 1, -1, -1):
+            if 'type max_filter' in all_lines[i]:
+                start = i
+        #change filter size and stride only in lines immediately following 'type max_filter'
+        counter = 2
+        for i in range(start,len(all_lines)):
+            line = all_lines[i]
+            if counter == 0:
+                break
+            if 'size' in all_lines[i]:
+                counter -= 1 
+                all_lines[i] = 'size ' + filter_size + ',1,1\n'
+            elif 'stride' in all_lines[i]:
+                counter -= 1 
+                all_lines[i] = 'stride ' + filter_size + ',1,1\n'
+    #write changed file lines to new_net_fpath
+    with open(new_net_fpath, 'w') as net_file:
+        net_file.writelines(all_lines)
 
 '''
 Returns dict where keys are file names of file_dir and values are the empty string ''
@@ -187,6 +215,7 @@ def get_io_dirs(run_type):
     output_dir = cfg_parser.get(run_type, run_type + '_output_dir')
     return input_dir, output_dir
     
+
 '''
 Checks that depth of tif files in dataset is same across files and matches depth of network. 
 '''
@@ -209,6 +238,9 @@ if __name__ == "__main__":
     max_iter = cfg_parser.get('training', 'max_iter')
     forward_net = cfg_parser.get('forward', 'forward_net')
     forward_outsz = cfg_parser.get('forward', 'forward_outsz')
+    filter_size = cfg_parser.get('network', 'filter_size')
+    is_squashing = cfg_parser.get('network', 'is_squashing')
+    time_equalize = cfg_parser.get('preprocessing', 'time_equalize')
     
     run_type = 'training' #this var will be set in pipeline.py
     
@@ -228,15 +260,13 @@ if __name__ == "__main__":
     add_indices_to_dict(file_dict)
     train_indices, val_indices, forward_indices = get_train_val_forward_split_indices_as_str(file_dict)
     
-    print file_dict 
-    
-    '''Create znn files and put in output_dir'''
+    '''Create znn files and save to output_dir'''
     num_file_pairs = create_dataset_spec(input_dir, output_dir, file_dict) #TODO: test training with Docker 
     create_znn_config_file(output_dir, train_indices, val_indices, forward_indices, net_arch_fpath,
                            train_net_prefix, train_patch_size, learning_rate, momentum, num_iter_per_save,
                            max_iter, forward_net,forward_outsz, num_file_pairs)
     
-    # copy_template_network_file()
-    # set_network_conv_filter_size()
-    # set_network_max_filter_size()
-    
+    new_net_fpath = output_dir + '/' + net_arch_fpath.split('/')[-1]
+    copy_net_and_set_conv_filter_size(net_arch_fpath, new_net_fpath, filter_size)
+    if is_squashing:
+        set_network_3D_to_2D_squashing_filter_size(new_net_fpath, time_equalize)
