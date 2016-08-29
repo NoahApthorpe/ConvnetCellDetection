@@ -26,7 +26,7 @@ nodes npool1
 type sum 
 size 1
 
-edges conv5
+edges fcedges
 type conv
 size 1,1,1
 init msra   

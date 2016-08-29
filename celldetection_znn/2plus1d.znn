@@ -65,7 +65,7 @@ nodes npool1
 type sum
 size 10
 
-edges conv5
+edges fcedges
 type conv
 size 1,1,1
 init msra
@@ -78,7 +78,7 @@ type transfer
 function rectify_linear
 size 20
 
-edges conv6
+edges fcout
 type conv
 size 1,1,1
 stride 1,1,1
