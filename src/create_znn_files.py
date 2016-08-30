@@ -108,7 +108,7 @@ def create_znn_config_file(output_dir, train_indices, val_indices, forward_indic
     znn_cfg_parser.set('parameters', 'forward_range', forward_indices) #autoset as everything in input_dir
     znn_cfg_parser.set('parameters', 'forward_net', dockerize_path(forward_net))
     znn_cfg_parser.set('parameters', 'forward_outsz', forward_outsz) #TODO: calculate forward_outsz automatically, based on field of view
-    znn_cfg_parser.set('parameters', 'output_prefix', dockerize_path(net_arch_fpath[:-4]))
+    znn_cfg_parser.set('parameters', 'output_prefix', dockerize_path(output_dir) + '/')
     with open(znn_config_path, 'wb') as configfile:
         znn_cfg_parser.write(configfile)
 

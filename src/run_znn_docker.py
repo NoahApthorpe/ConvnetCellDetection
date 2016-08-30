@@ -36,11 +36,15 @@ def train_network(output_dir):
     output_dir = dockerize_path(output_dir)
     cmd = ''
     cmd += '"cd opt/znn-release/python; sudo ldconfig; python train.py -c ' + output_dir + '/znn_config.cfg"'
-    print cmd
     return cmd
 
-
 def forward_pass(output_dir):
+    cmd = ''
+    cmd += '"cd opt/znn-release/python; sudo ldconfig; python forward.py -c ' + output_dir + '/znn_config.cfg"'
+    return cmd
+
+#TODO: write function, maps sample numbers back to original image fnames 
+def rename_output_files():
     pass
 
 
@@ -51,7 +55,7 @@ if __name__ == "__main__":
     training_output_dir = cfg_parser.get('training', 'training_output_dir')
     forward_output_dir = cfg_parser.get('forward', 'forward_output_dir')
     
-    run_type = 'training' #this will be set in main_config or pipeline.py
+    run_type = 'forward' #this will be set in main_config or pipeline.py
     
     cmd = ''
     cmd += start_docker_machine(memory)
