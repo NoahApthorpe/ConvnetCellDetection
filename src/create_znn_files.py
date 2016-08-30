@@ -54,17 +54,17 @@ def create_dataset_spec(input_dir, output_dir, file_dict):
  Given a unique stk filename and its corresponding ROI file, creates one section of a ZNN dataset.spec file
 '''
 def write_one_section_dataset_spec(s, section_num, stk_path, roi_path):
-    s += '[image ' + str(section_num) +']\n'
+    s += '[image' + str(section_num) +']\n'
     s += 'fnames = ' + str(stk_path) + '\n'
     s += 'pp_types = standard3D\n'
     s += 'is_auto_crop = yes\n\n'
 
-    s += '[label ' + str(section_num) +']\n'
+    s += '[label' + str(section_num) +']\n'
     s += 'fnames = ' + str(roi_path) + '\n'
     s += 'pp_types = auto\n'
     s += 'is_auto_crop = yes\n\n'
     
-    s += '[sample ' + str(section_num) +']\n'
+    s += '[sample' + str(section_num) +']\n'
     s += 'input = ' + str(section_num) + '\n'
     s += 'output = ' + str(section_num) + '\n\n'
     
@@ -96,7 +96,7 @@ def create_znn_config_file(output_dir, train_indices, val_indices, forward_indic
     znn_cfg_parser.readfp(open(znn_config_path, 'r'))
     
     znn_cfg_parser.set('parameters','fnet_spec', dockerize_path(net_arch_fpath))
-    znn_cfg_parser.set('parameters', 'fdata_spec', dockerize_path(output_dir + '/dataset_spec'))
+    znn_cfg_parser.set('parameters', 'fdata_spec', dockerize_path(output_dir + '/dataset.spec'))
     znn_cfg_parser.set('parameters', 'train_net_prefix', dockerize_path(train_net_prefix))
     znn_cfg_parser.set('parameters', 'train_range', train_indices)
     znn_cfg_parser.set('parameters', 'test_range', val_indices)
@@ -210,7 +210,7 @@ Gets input/output directories for either training data or forward pass
 '''
 def get_io_dirs(run_type):
     if run_type != 'forward' and run_type != 'training':
-        raise Exception('run_type variable should be one of "forward" or "training"', run_type)
+        raise ValueError('run_type variable should be one of "forward" or "training"', run_type)
     input_dir = cfg_parser.get(run_type, run_type + '_input_dir')
     output_dir = cfg_parser.get(run_type, run_type + '_output_dir')
     return input_dir, output_dir
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     img_width = cfg_parser.get('general', 'img_width')
     img_height = cfg_parser.get('general', 'img_height')
     net_arch_fpath = cfg_parser.get('network', 'net_arch_fpath')
-    train_net_prefix = cfg_parser.get('training', 'training_net')
+    train_net_prefix = cfg_parser.get('training', 'training_net_prefix')
     train_patch_size = cfg_parser.get('training', 'patch_size')
     learning_rate = cfg_parser.get('training', 'learning_rate')
     momentum = cfg_parser.get('training', 'momentum')
