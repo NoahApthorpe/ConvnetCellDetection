@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-import subprocess, ConfigParser
+import subprocess, ConfigParser, os
 import signal
 from create_znn_files import dockerize_path
+from preprocessing import remove_ds_store
 
 '''
  Module to run ZNN commands in a Docker container 
@@ -43,13 +44,24 @@ def forward_pass(output_dir):
     cmd += '"cd opt/znn-release/python; sudo ldconfig; python forward.py -c ' + output_dir + '/znn_config.cfg"'
     return cmd
 
-#TODO: write function, maps sample numbers back to original image fnames 
-def rename_output_files():
-    pass
+'''
+Maps ZNN output fnames back to user-given fnames
+''' 
+def rename_output_files(cfg_parser, main_config_fpath, forward_output_dir):
+    dict_list = cfg_parser.items('fnames')
+    for item in dict_list:
+        number = item[0]
+        fname = item[1]
+        old_fname = forward_output_dir + '/_sample' + str(number)
+        new_fname = forward_output_dir + '/' + fname.split('/')[-1]
+        os.rename(old_fname + '_output.h5', new_fname + '_output.h5')
+        os.rename(old_fname + '_output_0.tif', new_fname + '_output_0.tif')
+        os.rename(old_fname + '_output_1.tif', new_fname + '_output_1.tif')    
 
 
 if __name__ == "__main__":
     cfg_parser = ConfigParser.SafeConfigParser()
+    main_config_fpath = '../main_config_ar.cfg'
     cfg_parser.readfp(open('../main_config_ar.cfg', 'r'))
     memory = cfg_parser.get('docker', 'memory')
     training_output_dir = cfg_parser.get('training', 'training_output_dir')
@@ -62,8 +74,6 @@ if __name__ == "__main__":
     cmd += '; '
     cmd += start_znn_container('/Users/sergiomartinez/Documents/ConvnetCellDetection')
     
-    #TODO: may need to keep ZNN container running and have a separate command for training/forward pass
-    # OR: insert in "command" parameter in 'start_znn_container?'
     if run_type == 'training':
         cmd += train_network(dockerize_path(training_output_dir))
     elif run_type == 'forward':
@@ -71,7 +81,11 @@ if __name__ == "__main__":
     else:
         raise ValueError('run_type variable should be one of "forward" or "training"', run_type)
     
-    print cmd
     process = subprocess.Popen(cmd, shell=True)
-    process.communicate() #cleanly shuts down process 
+    process.communicate() 
+    
+    if run_type == 'forward':
+        rename_output_files(cfg_parser, main_config_fpath, forward_output_dir)
+    
+    #TODO: Need to save docker container name and quit it!
     

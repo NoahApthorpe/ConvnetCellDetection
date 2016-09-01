@@ -21,7 +21,7 @@ from preprocessing import (is_labeled, get_labeled_split, split_labeled_director
  
  writes dataset.spec file and returns number of image/label pairs referenced therein 
 '''
-def create_dataset_spec(input_dir, output_dir, file_dict):
+def create_dataset_spec(input_dir, output_dir, file_dict, cfg_parser, main_config_fpath, run_type):
     f = open(output_dir + '/dataset.spec','w+') 
 
     #Build a list of absolute file paths, with index given by file_dict
@@ -39,12 +39,18 @@ def create_dataset_spec(input_dir, output_dir, file_dict):
     s = ''
     #Iterate over remaining list. Write dataset.spec file. Sample number of file corresponds to index in file_dict.
     #TODO: Forward pass: for .tif files without corresponding ROI files, should just have label be equal to orig. .tif file
+    if not cfg_parser.has_section('fnames'):
+        cfg_parser.add_section('fnames')
     for fname in files:
         section_num = file_dict[fname.split('/')[-1] + '.tif'][0]
-        stk_path = fname
         s = write_one_section_dataset_spec(s, section_num, '' + fname + '.tif', fname + '_ROI.tif')
+        cfg_parser.set('fnames', str(section_num), fname) # write section number (key) and fname (value) to config file
     f.write(s)
     f.close()
+    
+    if run_type == 'forward':
+        with open(main_config_fpath, 'wb') as configfile:
+            cfg_parser.write(configfile)
     
     return len(files)
 
@@ -226,7 +232,8 @@ def check_tif_depth():
 if __name__ == "__main__":
     '''Get user-specified information from main_config.cfg'''
     cfg_parser = ConfigParser.SafeConfigParser()
-    cfg_parser.readfp(open('../main_config_ar.cfg', 'r'))
+    main_config_fpath = '../main_config_ar.cfg'
+    cfg_parser.readfp(open(main_config_fpath, 'r'))
     img_width = cfg_parser.get('general', 'img_width')
     img_height = cfg_parser.get('general', 'img_height')
     net_arch_fpath = cfg_parser.get('network', 'net_arch_fpath')
@@ -242,7 +249,7 @@ if __name__ == "__main__":
     is_squashing = cfg_parser.get('network', 'is_squashing')
     time_equalize = cfg_parser.get('preprocessing', 'time_equalize')
     
-    run_type = 'training' #this var will be set in pipeline.py
+    run_type = 'forward' #this var will be set in pipeline.py
     
     '''Get and make user-specified input/output directories'''
     input_dir, output_dir = get_io_dirs(run_type)
@@ -261,7 +268,7 @@ if __name__ == "__main__":
     train_indices, val_indices, forward_indices = get_train_val_forward_split_indices_as_str(file_dict)
     
     '''Create znn files and save to output_dir'''
-    num_file_pairs = create_dataset_spec(input_dir, output_dir, file_dict) #TODO: test training with Docker 
+    num_file_pairs = create_dataset_spec(input_dir, output_dir, file_dict, cfg_parser, main_config_fpath, run_type) #TODO: test training with Docker 
     create_znn_config_file(output_dir, train_indices, val_indices, forward_indices, net_arch_fpath,
                            train_net_prefix, train_patch_size, learning_rate, momentum, num_iter_per_save,
                            max_iter, forward_net,forward_outsz, num_file_pairs)
