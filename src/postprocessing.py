@@ -1,4 +1,4 @@
-###########################################################
+####OA#######################################################
 #
 # ConvNet Output Postprocessing
 #
@@ -30,7 +30,7 @@ import cPickle as pickle
 import ConfigParser
 import tifffile
 from load import *
-from test import Score
+from score import Score
 
 
 def add_path_sep(directory):
@@ -188,7 +188,7 @@ def parameter_optimization(preprocess_directory, network_output_directory, postp
                                          min_size_watershed, merge_size_watershed,
                                          (max_footprint,max_footprint),
                                          min_size_wand, max_size_wand)
-        s = Score(None, None, ground_truth_rois, rois)
+        s = Score(ground_truth_rois, rois)
         scores_params.append((s.total_f1_score, {'probability_threshold':threshold,
                                                  'min_size_watershed':min_size_watershed, 
                                                  'merge_size_watershed':merge_size_watershed,
@@ -255,4 +255,4 @@ if __name__ == "__main__":
         r = roi.max(axis=0)
         roi_name = postprocess_directory + filenames[i] + '.tif'
         tifffile.imsave(roi_name, r.astype(np.float32))
-   
+        np.save(postprocess_directory + filenames[i] + '.npy', roi, allow_pickle=False)
