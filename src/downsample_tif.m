@@ -34,27 +34,27 @@ for tl_file=tl_files;
     
     [~, ~, ext] = fileparts(tlf_name);
     if strcmpi(ext, '.tif') || strcmpi(ext, '.tiff')
-        downsample_tif_helper([data_dir + tlf_name], img_width, img_height, mean_proj_bins, max_proj_bins, downsampled_dir + tlf_name + '.tif');
+        downsample_tif_helper({strcat(data_dir,tlf_name)}, img_width, img_height, mean_proj_bins, max_proj_bins, strcat(downsampled_dir,tlf_name));
     
     elseif strcmpi(ext, '.zip') 
-        output_name = strcat(downsampled_dir, tlf_name, '.zip');
+        output_name = strcat(downsampled_dir, tlf_name);
         copyfile(tlf_name, output_name);
     
     elseif isdir(tlf_name) && ~strcmp(tlf_name, '.') && ~strcmp(tlf_name, '..') 
         data_dir_old = cd(tlf_name);
         d = dir;
         d = {d.name};
-        imgs = [];
+        imgs = {};
         for fname=d
             [~, ~, ext] = fileparts(fname);
             if strcmpi(ext, '.tif') || strcmpi(ext, '.tiff')
-                imgs = [imgs, fname];
+                imgs{end+1} = fname;
             elseif strcmpi(ext, '.zip')
                 output_name = strcat(downsampled_dir, tlf_name, '.zip');
                 copyfile(fname, output_name);
             end
         end
-        downsample_tif_helper(imgs, img_width, img_height, mean_proj_bins, max_proj_bins, downsampled_dir + fname + '.tif');
+        downsample_tif_helper(imgs, img_width, img_height, mean_proj_bins, max_proj_bins, strcat(downsampled_dir,fname,'.tif'));
         cd(data_dir_old);
     end
 end

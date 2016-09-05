@@ -6,7 +6,7 @@ mean_stack = zeros(img_width,img_height,0);
 
 % loop over all images
 for f=imgs;
-    fname = char(f)
+    fname = char(f);
 
     % read all video frames of current file
     info = imfinfo(fname);
@@ -43,7 +43,7 @@ if mod(size(mean_stack,3),max_proj_bins) ~= 0
 else
     max_stack_final = max_stack_even;
 end
-
+max_stack_final = single(max_stack_final);
 % save resultant downsampled video as a .tif file
 t = Tiff(output_name,'w');
 tagStruct.Photometric = Tiff.Photometric.MinIsBlack;

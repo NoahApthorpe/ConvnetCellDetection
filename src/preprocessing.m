@@ -33,9 +33,9 @@ end
 %This fixes the time_equalize issue, but not downsample_tif
 data_subdirs = strsplit('/',data_dir);
 if strcmp(data_subdirs{end-1},'labeled')
-    training_dir = strcat(data_dir,'training');
-    test_dir = strcat(data_dir,'test');
-    validation_dir = strcat(data_dir,'validation');
+    training_dir = strcat(data_dir,'training/');
+    test_dir = strcat(data_dir,'test/');
+    validation_dir = strcat(data_dir,'validation/');
     if do_downsample
         downsample_tif(training_dir, downsampled_dir, img_width, img_height,  mean_proj_bin, max_proj_bin);
         downsample_tif(test_dir, downsampled_dir, img_width, img_height,  mean_proj_bin, max_proj_bin);
