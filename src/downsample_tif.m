@@ -35,8 +35,9 @@ for vdir=video_dirs;
     % ignore self and parent links and '.DS_Store' file
     % NOTE: make this if statement more exclusionary if 
     %       directory contains additional non-video folders
-    if strcmp(vdir_name, '.') || strcmp(vdir_name, '..') || strcmp(vdir_name, '.DS_Store') || strcmp(vdir_name, 'ref')
-        continue
+    [pathstr, name, ext] = fileparts(vdir_name);
+    if ~strcmp(ext, '.tif') && ~strcmp(ext, '.tiff')
+        continue 
     end
     
     % create arrays to store results
@@ -104,7 +105,7 @@ for vdir=video_dirs;
     end
 
     % save resultant downsampled video as a .tif file
-    output_name = strcat(downsampled_dir, vdir_name, '.tif');
+    output_name = strcat(downsampled_dir, vdir_name, '.tif')
     t = Tiff(output_name,'w');
     tagStruct.Photometric = Tiff.Photometric.MinIsBlack;
     tagStruct.BitsPerSample = 32;
