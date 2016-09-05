@@ -27,108 +27,36 @@ function [] = downsample_tif(data_dir, downsampled_dir, img_width, img_height,  
 
 % loop over video directories in data directories
 orig_dir = cd(data_dir);
-video_dirs = dir;
-video_dirs = {video_dirs.name};
-for vdir=video_dirs;
-    vdir_name = char(vdir)
+tl_files = dir;
+tl_files = {tl_files.name};
+for tl_file=tl_files;
+    tlf_name = char(tl_file)
     
-    % ignore self and parent links and '.DS_Store' file
-    % NOTE: make this if statement more exclusionary if 
-    %       directory contains additional non-video folders
-    [pathstr, name, ext] = fileparts(vdir_name);
-    if ~strcmp(ext, '.tif') && ~strcmp(ext, '.tiff')
-        continue 
-    end
+    [~, ~, ext] = fileparts(tlf_name);
+    if strcmpi(ext, '.tif') || strcmpi(ext, '.tiff')
+        downsample_tif_helper([data_dir + tlf_name], img_width, img_height, mean_proj_bins, max_proj_bins, downsampled_dir + tlf_name + '.tif');
     
-    % create arrays to store results
-    full_stack = zeros(img_width,img_height,0);
-    mean_stack = zeros(img_width,img_height,0);
+    elseif strcmpi(ext, '.zip') 
+        output_name = strcat(downsampled_dir, tlf_name, '.zip');
+        copyfile(tlf_name, output_name);
     
-    % loop over all files in current video directory
-    data_dir_old = cd(vdir_name);
-    d = dir;
-    d = {d.name};
-    for f=d;
-        fname = char(f)
-        
-        % ignore files without >=3 character extensions
-        if length(fname) < 4
-            continue
+    elseif isdir(tlf_name) && ~strcmp(tlf_name, '.') && ~strcmp(tlf_name, '..') 
+        data_dir_old = cd(tlf_name);
+        d = dir;
+        d = {d.name};
+        imgs = [];
+        for fname=d
+            [~, ~, ext] = fileparts(fname);
+            if strcmpi(ext, '.tif') || strcmpi(ext, '.tiff')
+                imgs = [imgs, fname];
+            elseif strcmpi(ext, '.zip')
+                output_name = strcat(downsampled_dir, tlf_name, '.zip');
+                copyfile(fname, output_name);
+            end
         end
-        
-        % copy roi zip file to output directory
-        if strcmpi(fname(end-3:end), '.zip')
-            output_name = strcat(downsampled_dir, vdir_name, '.zip');
-            copyfile(fname, output_name);
-            continue
-        end
-        
-        % ignore other non-tiff files
-        if ~strcmpi(fname(end-4:end), '.tiff') && ~strcmpi(fname(end-3:end), '.tif')
-            continue
-        end
-
-        % read all video frames of current file
-        info = imfinfo(fname);
-        num_images = numel(info);
-        for k = 1:num_images
-            A = imread(fname, k, 'Info', info);
-            full_stack = cat(3, full_stack, A);
-        end
-        size(full_stack)
-
-        % mean-project frames 
-        while size(full_stack,3) > mean_proj_bins
-            section = full_stack(:,:,1:mean_proj_bins);    
-            mean_section = mean(section,3);
-            mean_stack = cat(3, mean_stack, mean_section);
-            full_stack = full_stack(:,:,mean_proj_bins+1:end);
-        end
-        size(full_stack)
-        size(mean_stack)
+        downsample_tif_helper(imgs, img_width, img_height, mean_proj_bins, max_proj_bins, downsampled_dir + fname + '.tif');
+        cd(data_dir_old);
     end
-    
-    % mean-project remaining frames (# < mean_proj_bins)
-    mean_stack = cat(3, mean_stack, mean(full_stack, 3));
-
-    % max-project frames
-    m = fix(size(mean_stack,3)/max_proj_bins)*max_proj_bins;
-    mean_stack_even = mean_stack(:,:,1:m);
-    max_stack_even = reshape(mean_stack_even, img_width, img_height, [], max_proj_bins);
-    max_stack_even = max(max_stack_even,[],4);
-    if mod(size(mean_stack,3),max_proj_bins) ~= 0
-        mean_stack_rem = mean_stack(:,:,m:end);
-        max_stack_rem = max(mean_stack_rem,[],3);
-        max_stack_final = cat(3, max_stack_even, max_stack_rem);
-    else
-        max_stack_final = max_stack_even;
-    end
-
-    % save resultant downsampled video as a .tif file
-    output_name = strcat(downsampled_dir, vdir_name, '.tif')
-    t = Tiff(output_name,'w');
-    tagStruct.Photometric = Tiff.Photometric.MinIsBlack;
-    tagStruct.BitsPerSample = 32;
-    tagStruct.SamplesPerPixel = 1;
-    tagStruct.SampleFormat = Tiff.SampleFormat.IEEEFP;
-    tagStruct.ImageLength = img_height;
-    tagStruct.ImageWidth = img_width;
-    tagStruct.RowsPerStrip = 256;
-    tagStruct.PlanarConfiguration = Tiff.PlanarConfiguration.Chunky;
-    tagStruct.Compression = 1;
-    t.setTag(tagStruct);
-    for i = 1:size(max_stack_final,3)
-        if (i == 1)
-            t.write(max_stack_final(:,:,i));
-        else
-            t.writeDirectory()
-            t.setTag(tagStruct);
-            t.write(max_stack_final(:,:,i));
-        end
-    end
-    t.close();
-    cd(data_dir_old);
 end
 cd(orig_dir);
 end
-
