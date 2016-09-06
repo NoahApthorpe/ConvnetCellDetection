@@ -12,7 +12,7 @@
 
 import os, sys, shutil
 import ConfigParser
-from preprocessing import (is_labeled, get_labeled_split, split_labeled_directory,
+from preprocess import (is_labeled, get_labeled_split, split_labeled_directory,
                            put_labeled_at_end_of_path_if_not_there, remove_ds_store)
     
 '''new_create_dataset_spec
@@ -214,7 +214,7 @@ def add_indices_to_dict(fname_dict):
 '''
 Gets input/output directories for either training data or forward pass
 '''
-def get_io_dirs(run_type):
+def get_io_dirs(run_type, cfg_parser):
     if run_type != 'forward' and run_type != 'training':
         raise ValueError('run_type variable should be one of "forward" or "training"', run_type)
     input_dir = cfg_parser.get(run_type, run_type + '_input_dir')
@@ -228,11 +228,10 @@ Checks that depth of tif files in dataset is same across files and matches depth
 def check_tif_depth():
     pass
 
-
-if __name__ == "__main__":
+def main(main_config_fpath = '../main_config_ar.cfg', run_type = 'forward'):
     '''Get user-specified information from main_config.cfg'''
+    print main_config_fpath
     cfg_parser = ConfigParser.SafeConfigParser()
-    main_config_fpath = '../main_config_ar.cfg'
     cfg_parser.readfp(open(main_config_fpath, 'r'))
     img_width = cfg_parser.get('general', 'img_width')
     img_height = cfg_parser.get('general', 'img_height')
@@ -249,10 +248,8 @@ if __name__ == "__main__":
     is_squashing = cfg_parser.get('network', 'is_squashing')
     time_equalize = cfg_parser.get('preprocessing', 'time_equalize')
     
-    run_type = 'forward' #this var will be set in pipeline.py
-    
     '''Get and make user-specified input/output directories'''
-    input_dir, output_dir = get_io_dirs(run_type)
+    input_dir, output_dir = get_io_dirs(run_type, cfg_parser)
     if not os.path.isdir(input_dir): 
         os.makedirs(input_dir)
     if not os.path.isdir(output_dir):
@@ -277,3 +274,6 @@ if __name__ == "__main__":
     copy_net_and_set_conv_filter_size(net_arch_fpath, new_net_fpath, filter_size)
     if is_squashing:
         set_network_3D_to_2D_squashing_filter_size(new_net_fpath, time_equalize)
+        
+if __name__ == "__main__":
+    main()

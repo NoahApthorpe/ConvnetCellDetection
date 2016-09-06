@@ -3,7 +3,7 @@
 import subprocess, ConfigParser, os
 import signal
 from create_znn_files import dockerize_path
-from preprocessing import remove_ds_store
+from preprocess import remove_ds_store
 
 '''
  Module to run ZNN commands in a Docker container 
@@ -21,8 +21,8 @@ def start_docker_machine(memory):
     cmd = ''
     cmd += 'docker-machine create -d virtualbox --virtualbox-memory '+ memory + ' default; '
     cmd += 'docker-machine start default; ' #TODO: make default a randomly-generated name
-    cmd += 'eval $(docker-machine env); '
-    cmd += 'docker run hello-world'
+    cmd += 'eval $(docker-machine env)'
+    # cmd += ' ;docker run hello-world' #for testing
     return cmd
     
     
@@ -64,19 +64,16 @@ def rename_output_files(cfg_parser, main_config_fpath, forward_output_dir):
         os.rename(old_fname + '_output_0.tif', new_fname + '_output_0.tif')
         os.rename(old_fname + '_output_1.tif', new_fname + '_output_1.tif')    
 
-
-if __name__ == "__main__":
+def main(main_config_fpath = '../main_config_ar.cfg', run_type = 'forward'):
     cfg_parser = ConfigParser.SafeConfigParser()
-    main_config_fpath = '../main_config_ar.cfg'
-    cfg_parser.readfp(open('../main_config_ar.cfg', 'r'))
+    cfg_parser.readfp(open(main_config_fpath, 'r'))
     memory = cfg_parser.get('docker', 'memory')
     container_name = cfg_parser.get('docker', 'container_name')
     training_output_dir = cfg_parser.get('training', 'training_output_dir')
     forward_output_dir = cfg_parser.get('forward', 'forward_output_dir')
     
-    run_type = 'forward' #this will be set in main_config or pipeline.py
-    dir_to_mount = '/Users/sergiomartinez/Documents/ConvnetCellDetection' #""
-    
+    dir_to_mount = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) #Mounts ConvnetCellDetection directory
+    print dir_to_mount
     
     cmd = ''
     cmd += start_docker_machine(memory)
@@ -96,6 +93,6 @@ if __name__ == "__main__":
     
     if run_type == 'forward':
         rename_output_files(cfg_parser, main_config_fpath, forward_output_dir)
-    
-    #TODO: Need to save docker container name and quit it!
-    
+
+if __name__ == "__main__":
+    main()
