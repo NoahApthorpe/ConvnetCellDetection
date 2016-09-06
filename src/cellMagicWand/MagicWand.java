@@ -10,6 +10,18 @@ public class MagicWand {
 	File photo_dir_f = new File(photo_dir);
 	File params_dir_f = new File(params_dir);
 
+	boolean is_labeled = photo_dir_f.getName().equals("labeled/");
+	File training_dir = new File(photo_dir + "training/");
+	File validation_dir = new File(photo_dir + "validation/");
+	File test_dir = new File(photo_dir + "test/");
+	File[] training_files = new File[0];
+	File[] validation_files = new File[0];
+	File[] test_files = new File[0];
+	if (is_labeled && training_dir.isDirectory()) training_files = training_dir.listFiles();
+	if (is_labeled && validation_dir.isDirectory()) validation_files = validation_dir.listFiles();
+	if (is_labeled && test_dir.isDirectory()) test_files = test_dir.listFiles();
+	
+	
 	File[] params_names_f = params_dir_f.listFiles();
 	ArrayList<String> photo_names = new ArrayList<String>();
 	ArrayList<String> params_names = new ArrayList<String>();
@@ -20,7 +32,17 @@ public class MagicWand {
 			String name_noext = name.substring(0, name.lastIndexOf('.'));
 			String ext = name.substring(name.lastIndexOf('.'), name.length());
 			if (!ext.equals(".txt")) continue;
-			photo_names.add(photo_dir + name_noext + ".tif");
+			if (is_labeled) {
+			    if (inFileArray(training_files, name_noext)) {
+				photo_names.add(photo_dir + "training/" + name_noext + ".tif");
+			    } else if (inFileArray(validation_files, name_noext)) {
+				photo_names.add(photo_dir + "validation/" + name_noext + ".tif");
+			    } else if (inFileArray(test_files, name_noext)) {
+				photo_names.add(photo_dir + "test/" + name_noext + ".tif");
+			    }
+			} else {
+			    photo_names.add(photo_dir + name_noext + ".tif");
+			}
 			params_names.add(params_dir + name_noext + ".txt");
 			edges_names.add(params_dir + name_noext + "_edges.txt");
 		} catch (IndexOutOfBoundsException e) {e.printStackTrace();}
@@ -37,5 +59,14 @@ public class MagicWand {
 		CommandLine cl = new CommandLine(a);
 	    //} catch (Exception e) {e.printStackTrace();}
 	}
+    }
+
+    private static boolean inFileArray(File[] fileArray, String name) {
+	for (File f : fileArray) {
+	    String fname = f.getName();
+	    String fname_noext = fname.substring(0, fname.lastIndexOf('.'));
+	    if (fname_noext.equals(name)) return true;
+	}
+	return false;
     }
 }
