@@ -10,7 +10,7 @@ public class MagicWand {
 	File photo_dir_f = new File(photo_dir);
 	File params_dir_f = new File(params_dir);
 
-	boolean is_labeled = photo_dir_f.getName().equals("labeled/");
+	boolean is_labeled = photo_dir_f.getName().equals("labeled");
 	File training_dir = new File(photo_dir + "training/");
 	File validation_dir = new File(photo_dir + "validation/");
 	File test_dir = new File(photo_dir + "test/");
@@ -20,7 +20,6 @@ public class MagicWand {
 	if (is_labeled && training_dir.isDirectory()) training_files = training_dir.listFiles();
 	if (is_labeled && validation_dir.isDirectory()) validation_files = validation_dir.listFiles();
 	if (is_labeled && test_dir.isDirectory()) test_files = test_dir.listFiles();
-	
 	
 	File[] params_names_f = params_dir_f.listFiles();
 	ArrayList<String> photo_names = new ArrayList<String>();
@@ -34,6 +33,7 @@ public class MagicWand {
 			if (!ext.equals(".txt")) continue;
 			if (is_labeled) {
 			    if (inFileArray(training_files, name_noext)) {
+				
 				photo_names.add(photo_dir + "training/" + name_noext + ".tif");
 			    } else if (inFileArray(validation_files, name_noext)) {
 				photo_names.add(photo_dir + "validation/" + name_noext + ".tif");
@@ -51,7 +51,7 @@ public class MagicWand {
 	assert(photo_names.size() == params_names.size() && photo_names.size() == edges_names.size());
 
 	for(int i = 0; i < photo_names.size(); i++) {
-	    String[] a = new String[3];
+		String[] a = new String[3];
 	    a[0] = photo_names.get(i);
 	    a[1] = params_names.get(i);
 	    a[2] = edges_names.get(i);
@@ -65,7 +65,8 @@ public class MagicWand {
 	for (File f : fileArray) {
 	    String fname = f.getName();
 	    String fname_noext = fname.substring(0, fname.lastIndexOf('.'));
-	    if (fname_noext.equals(name)) return true;
+		
+		if (fname_noext.equals(name)) return true;
 	}
 	return false;
     }

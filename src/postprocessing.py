@@ -49,8 +49,8 @@ def read_network_output(directory):
         im = Image.open(f)
         im = np.array(im, dtype=np.float32)
         images.append(im)
-        filenames.append(fname.rpartition(".")[0])
-        print f
+        trunc_fname = fname.rpartition("_output")[0]
+        filenames.append(trunc_fname)
     return images, filenames
 
 
@@ -147,7 +147,7 @@ def postprocessing(preprocess_directory, network_output_directory, postprocess_d
                                                 merge_size_watershed, 
                                                 max_footprint=max_footprint) for im in images])
     
-    # write parameter files for magic wand tool
+    # write parameter files for magic wand tool    
     for i in range(len(images)):
         magicwand_params_fn = magicwand_directory + filenames[i]+".txt"
         markers_to_param_file(markers[i], min_size_wand, max_size_wand, 
@@ -255,7 +255,8 @@ if __name__ == "__main__":
     
     # Save final ROIs
     for i,roi in enumerate(final_rois):
+        print "Saving postprocessed version of ", filenames[i]
         r = roi.max(axis=0)
         roi_name = postprocess_directory + filenames[i] + '.tif'
         tifffile.imsave(roi_name, r.astype(np.float32))
-        np.save(postprocess_directory + filenames[i] + '.npy', roi, allow_pickle=False)
+        np.savez_compressed(postprocess_directory + filenames[i] + '.npz', roi)

@@ -27,7 +27,7 @@ while ~feof(cfg_file)
         continue
     end
     
-    [key, value] = strtok(s, ':');
+    [key, value] = strtok(s, '=');
     value = strtrim(value(2:end));
     
     if value(1) == '"'
