@@ -31,26 +31,31 @@ if __name__ == "__main__":
     cfg_parser.readfp(open('./main_config.cfg','r'))
     
     # read parameters
-    postprocess_directory = cfg_parser.get('general', 'postprocess_dir')
-    if postprocess_directory[-1] != os.path.sep:
-        postprocess_directory += os.path.sep
-    img_width = cfg_parser.getint('general','img_width')
+    postprocess_dir = cfg_parser.get('general', 'postprocess_dir')
+    preprocess_dir = cfg_parser.get('general', 'preprocess_dir')
+    if postprocess_dir[-1] != os.path.sep:
+        postprocess_dir += os.path.sep
+    if preprocess_dir[-1] != os.path.sep:
+        preprocess_dir += os.path.sep
+    img_width = cfg_parser.getint('general', 'img_width')
     img_height = cfg_parser.getint('general', 'img_height')
-    score_labeled_data(post_process_directory, img_width, img_height)
+    score_labeled_data(postprocess_dir, preprocess_dir, img_width, img_height)
     
 
-def score_labeled_data(data_directory, img_width, img_height):
-    ground_truth_data, filenames = load_data(data_directory, img_width, img_height)
-    rois = default_dict(list)
-    for i,(s,r) in enumerate(ground_truth_data):
-        rois[filenames[i]][0] = r
-    for f in os.listdir(data_directory):
-        filename = os.path.splitext(os.path.basename(f))[0]
-        if f.endswith('.npy'):
-            rois[filename][1] = np.load(data_directory + f, allow_pickle=False)
+def score_labeled_data(postprocess_dir, preprocess_dir, img_width, img_height):
+    categories = ["training/", "validation/", "test/"]
+    for c in categories:
+        ground_truth_data, filenames = load_data(preprocess_dir + c, img_width, img_height)
+        rois = default_dict(list)
+        for i,(s,r) in enumerate(ground_truth_data):
+            rois[filenames[i]][0] = r
+        for f in os.listdir(postprocess_dir + c):
+            filename = os.path.splitext(os.path.basename(f))[0]
+            if f.endswith('.npz'):
+                rois[filename][1] = np.load(postprocess_dir + c + f)
     ground_truth_rois, convnet_rois = zip(*rois.values())
     score = Score(ground_truth_rois, convnet_rois)
-    score_file = open(data_directory + "score.txt", 'w')
+    score_file = open(post_process_dir + c + "score.txt", 'w')
     score_file.write(str(score))
     score_file.close()
             
