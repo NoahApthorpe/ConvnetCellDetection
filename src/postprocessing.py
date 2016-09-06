@@ -45,11 +45,12 @@ def read_network_output(directory):
     filenames = []
     for fname in os.listdir(directory):
         f = directory + fname
-        if not f.endswith(".tif"): continue
+        if "output_0.tif" not in f : continue
         im = Image.open(f)
         im = np.array(im, dtype=np.float32)
         images.append(im)
         filenames.append(fname.rpartition(".")[0])
+        print f
     return images, filenames
 
 
@@ -153,7 +154,9 @@ def postprocessing(preprocess_directory, network_output_directory, postprocess_d
                               magicwand_params_fn, border)
 
     # run magic wand tool
-    magicwand_classpath = "./src/cellMagicWand"
+    # magicwand_classpath = "./src/cellMagicWand"
+    magicwand_classpath = os.path.dirname(os.path.abspath(__file__)) + '/cellMagicWand'
+    magicwand_compile = " ".join(["javac -cp", magicwand_classpath, "MagicWand.java"])
     magicwand_command = " ".join(["java -cp", magicwand_classpath, "MagicWand", 
                                   preprocess_directory, magicwand_directory])
     process = subprocess.Popen(magicwand_command, shell=True, 
@@ -205,13 +208,14 @@ def parameter_optimization(preprocess_directory, network_output_directory, postp
 
 
 if __name__ == "__main__":
+    main_config_fpath = '../main_config_ar.cfg'
     cfg_parser = ConfigParser.SafeConfigParser()
-    cfg_parser.readfp(open('./main_config.cfg','r'))
+    cfg_parser.readfp(open(main_config_fpath,'r'))
 
     # read parameters
     downsample_directory = add_path_sep(cfg_parser.get('general', 'downsample_dir'))
     preprocess_directory = add_path_sep(cfg_parser.get('general', 'preprocess_dir'))
-    network_output_directory = add_path_sep(cfg_parser.get('general', 'network_output_dir'))
+    network_output_directory = add_path_sep(cfg_parser.get('forward', 'forward_output_dir')) #I updated this -AR 9/5/16
     postprocess_directory = add_path_sep(cfg_parser.get('general', 'postprocess_dir'))
     img_width = cfg_parser.getint('general','img_width')
     img_height = cfg_parser.getint('general', 'img_height')
@@ -232,7 +236,7 @@ if __name__ == "__main__":
                                    postprocess_directory, border, min_size_wand, max_size_wand,
                                    downsample_directory, params_cfg)
     else:
-        params_cfg = "./main_config.cfg"
+        params_cfg = main_config_fpath
     params_cfg_parser.readfp(open(params_cfg,'r'))
 
     # read postprocessing-specific parameters
@@ -250,7 +254,6 @@ if __name__ == "__main__":
                                 min_size_wand, max_size_wand)
     
     # Save final ROIs
-    print filenames
     for i,roi in enumerate(final_rois):
         r = roi.max(axis=0)
         roi_name = postprocess_directory + filenames[i] + '.tif'
