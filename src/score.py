@@ -51,8 +51,8 @@ def score_labeled_data(postprocess_dir, preprocess_dir, img_width, img_height):
             rois[filenames[i]][0] = r
         for f in os.listdir(postprocess_dir + c):
             filename = os.path.splitext(os.path.basename(f))[0]
-            if f.endswith('.npy'):
-                rois[filename][1] = np.load(postprocess_dir + c + f, allow_pickle=False)
+            if f.endswith('.npz'):
+                rois[filename][1] = np.load(postprocess_dir + c + f)
     ground_truth_rois, convnet_rois = zip(*rois.values())
     score = Score(ground_truth_rois, convnet_rois)
     score_file = open(post_process_dir + c + "score.txt", 'w')
