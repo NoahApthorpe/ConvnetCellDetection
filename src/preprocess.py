@@ -87,7 +87,7 @@ def get_labeled_split(already_split_dir):
  Files go to a particular subdirectory based on split_dict dictionary
  is_ROI_tif should be true when ROI labels in directory are tif files, not zip files
 '''
-def split_labeled_directory(split_dict, dir_to_split,is_ROI_tif):
+def split_labeled_directory(split_dict, dir_to_split,is_ROI_tif, is_post_process):
     if dir_to_split[-1] != '/':
         dir_to_split += '/'
     for subdir in split_dict.itervalues():
@@ -95,9 +95,11 @@ def split_labeled_directory(split_dict, dir_to_split,is_ROI_tif):
         if not os.path.exists(subdir_path):
             os.makedirs(subdir_path)
     for fname, subdir in split_dict.items():
+        if is_post_process and ".zip" in fname:
+            continue
         if is_ROI_tif:
             fname = fname.replace(".zip","_ROI.tif")
-        try : 
+        try :
             os.rename(dir_to_split + fname, dir_to_split + subdir + '/' + fname) # move fname into new subdir
         except AssertionError:
             print fname, ' was not found in ', dir_to_split, ' while attempting to maintain training/test/validation split'
@@ -152,9 +154,9 @@ def main(main_config_fpath = '../main_config_ar.cfg'):
     '''Impose training/test/validation split on preprocess_dir and downsample_dir'''
     if is_labeled(data_directory) :
         split_dict = get_labeled_split(data_directory)
-        split_labeled_directory(split_dict, preprocess_directory, True)
+        split_labeled_directory(split_dict, preprocess_directory, True, False)
         if do_downsample :
-            split_labeled_directory(split_dict, downsample_directory, False)
+            split_labeled_directory(split_dict, downsample_directory, False, False)
             
 if __name__ == "__main__":
     main()

@@ -31,7 +31,7 @@ import ConfigParser
 import tifffile
 from load import *
 from score import Score
-
+import preprocess
 
 def add_path_sep(directory):
     if directory[-1] == os.path.sep:
@@ -213,6 +213,7 @@ if __name__ == "__main__":
     cfg_parser.readfp(open(main_config_fpath,'r'))
 
     # read parameters
+    data_directory = cfg_parser.get('general', 'data_dir')
     downsample_directory = add_path_sep(cfg_parser.get('general', 'downsample_dir'))
     preprocess_directory = add_path_sep(cfg_parser.get('general', 'preprocess_dir'))
     network_output_directory = add_path_sep(cfg_parser.get('forward', 'forward_output_dir')) #I updated this -AR 9/5/16
@@ -226,7 +227,9 @@ if __name__ == "__main__":
     max_size_wand = cfg_parser.getfloat('postprocessing', 'max_size_wand')
     if not os.path.isdir(postprocess_directory):
         os.mkdir(postprocess_directory)
-
+    else:
+        raise Exception("Please delete existing postprocessing directory ", postprocess_directory)
+    
     # locate postprocessing parameters or run grid search optimization
     params_cfg_parser = ConfigParser.SafeConfigParser()
     if do_gridsearch_postprocess_params:
@@ -238,7 +241,7 @@ if __name__ == "__main__":
     else:
         params_cfg = main_config_fpath
     params_cfg_parser.readfp(open(params_cfg,'r'))
-
+    
     # read postprocessing-specific parameters
     threshold = params_cfg_parser.getfloat('postprocessing', 'probability_threshold')
     min_size_watershed = params_cfg_parser.getfloat('postprocessing', 'min_size_watershed')
@@ -260,3 +263,8 @@ if __name__ == "__main__":
         roi_name = postprocess_directory + filenames[i] + '.tif'
         tifffile.imsave(roi_name, r.astype(np.float32))
         np.savez_compressed(postprocess_directory + filenames[i] + '.npz', roi)
+    
+    # Impose test/train/validation split on postprocess directory if applicable 
+    if preprocess.is_labeled(data_directory) :
+        split_dict = preprocess.get_labeled_split(data_directory)
+        preprocess.split_labeled_directory(split_dict, postprocess_directory, False, True)
