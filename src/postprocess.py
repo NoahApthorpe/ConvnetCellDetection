@@ -207,7 +207,7 @@ def parameter_optimization(preprocess_directory, network_output_directory, postp
     return
 
 
-if __name__ == "__main__":
+def main():
     main_config_fpath = '../main_config_ar.cfg'
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath,'r'))
@@ -268,3 +268,6 @@ if __name__ == "__main__":
     if preprocess.is_labeled(data_directory) :
         split_dict = preprocess.get_labeled_split(data_directory)
         preprocess.split_labeled_directory(split_dict, postprocess_directory, False, True)
+
+if __name__ == "__main__":
+    main()
