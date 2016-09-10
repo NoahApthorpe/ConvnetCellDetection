@@ -25,6 +25,7 @@ import os
 from collections import defaultdict
 import os.path
 import load
+from preprocess import is_labeled
 
 if __name__ == "__main__":
     cfg_parser = ConfigParser.SafeConfigParser()
@@ -32,22 +33,25 @@ if __name__ == "__main__":
     
     # read parameters
     postprocess_dir = cfg_parser.get('general', 'postprocess_dir')
-    preprocess_dir = cfg_parser.get('general', 'preprocess_dir')
+    data_dir = cfg_parser.get('general', 'data_dir')
     if postprocess_dir[-1] != os.path.sep:
         postprocess_dir += os.path.sep
-    if preprocess_dir[-1] != os.path.sep:
-        preprocess_dir += os.path.sep
+    if data_dir[-1] != os.path.sep:
+        data_dir += os.path.sep
     img_width = cfg_parser.getint('general', 'img_width')
     img_height = cfg_parser.getint('general', 'img_height')
-    score_labeled_data(postprocess_dir, preprocess_dir, img_width, img_height)
+    score_labeled_data(postprocess_dir, data_dir, img_width, img_height)
     
 
-def score_labeled_data(postprocess_dir, preprocess_dir, img_width, img_height):
+def score_labeled_data(postprocess_dir, data_dir, img_width, img_height):
+    if not is_labeled(data_dir) or not is_labeled(postprocess_dir):
+        print "Scoring is only possible for ground-truth labeled data"
+        return
     categories = ["training/", "validation/", "test/"]
     for c in categories:
-        ground_truth_data, filenames = load_data(preprocess_dir + c, img_width, img_height)
-        rois = default_dict(list)
-        for i,(s,r) in enumerate(ground_truth_data):
+        ground_truth_rois, filenames = load_data(data_dir + c, img_width, img_height, rois_only=True)
+        rois = default_dict(lambda: [None, None])
+        for i,r in enumerate(ground_truth_rois):
             rois[filenames[i]][0] = r
         for f in os.listdir(postprocess_dir + c):
             filename = os.path.splitext(os.path.basename(f))[0]
@@ -55,9 +59,8 @@ def score_labeled_data(postprocess_dir, preprocess_dir, img_width, img_height):
                 rois[filename][1] = np.load(postprocess_dir + c + f)
     ground_truth_rois, convnet_rois = zip(*rois.values())
     score = Score(ground_truth_rois, convnet_rois)
-    score_file = open(post_process_dir + c + "score.txt", 'w')
-    score_file.write(str(score))
-    score_file.close()
+    with open(postprocess_dir + c + "score.txt", 'w') as score_file:
+        score_file.write(str(score))
             
     
 class Score:

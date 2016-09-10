@@ -27,7 +27,7 @@ import os
 import os.path
 
 # load video and roi files from argument directory
-def load_data(directory, img_width, img_height):
+def load_data(directory, img_width, img_height, rois_only=False):
     if directory[-1] != os.path.sep:
         directory += os.path.sep
 
@@ -43,7 +43,10 @@ def load_data(directory, img_width, img_height):
     for fn in file_names:
         stack_name = directory+fn+'.tif'
         roi_name = directory+fn+'.zip'
-        data.append((load_stack(stack_name), load_rois(roi_name, img_width, img_height)))
+        if rois_only:
+            data.append(load_rois(roi_name, img_width, img_height))
+        else:
+            data.append((load_stack(stack_name), load_rois(roi_name, img_width, img_height)))
 
     return data, list(file_names)
 
