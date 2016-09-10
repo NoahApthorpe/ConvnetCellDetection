@@ -41,7 +41,7 @@ def preprocessing(main_config_fpath):
     cfg_parser.readfp(open(main_config_fpath, 'r'))
     matlab_path = cfg_parser.get('general', 'matlab_path')
     src_path = os.path.dirname(os.path.abspath(__file__))
-    cmd = matlab_path + ' -nodesktop -nosplash < ' + os.path.dirname(os.path.abspath(__file__)) + '/preprocess.m' 
+    cmd = matlab_path + ' -nodesktop -nosplash -r ' + '\"cd(' + os.path.dirname(os.path.abspath(__file__)) + '); ' + 'preprocess(' + main_config_fpath + ')\"' 
     
     print 'Running initial preprocessing steps in MATLAB...'
     process = subprocess.Popen(cmd, shell=True) 

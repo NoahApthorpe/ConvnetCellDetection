@@ -7,8 +7,13 @@
 %     configuration file and runs the downsample_tif
 %     and time_equalize functions on all specified data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-cfg_file = '../main_config_ar.cfg';
+function preprocess(varargin)
+if nargin < 1
+    cfg_file = '../main_config_ar.cfg';
+else
+    cfg_file = varargin(1);
+end
+   
 cfg_parameters = cfg2struct(cfg_file);
 data_dir = cfg_parameters.general.data_dir;
 img_width = cfg_parameters.general.img_width;
@@ -61,3 +66,4 @@ time_equalize(downsampled_dir, img_width, img_height, new_time_depth);
 % end
 % 
 % time_equalize(downsampled_dir, img_width, img_height, new_time_depth);
+end
