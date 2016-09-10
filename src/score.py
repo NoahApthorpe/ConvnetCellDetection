@@ -27,42 +27,7 @@ import os.path
 import load
 from preprocess import is_labeled
 
-if __name__ == "__main__":
-    cfg_parser = ConfigParser.SafeConfigParser()
-    cfg_parser.readfp(open('./main_config.cfg','r'))
-    
-    # read parameters
-    postprocess_dir = cfg_parser.get('general', 'postprocess_dir')
-    data_dir = cfg_parser.get('general', 'data_dir')
-    if postprocess_dir[-1] != os.path.sep:
-        postprocess_dir += os.path.sep
-    if data_dir[-1] != os.path.sep:
-        data_dir += os.path.sep
-    img_width = cfg_parser.getint('general', 'img_width')
-    img_height = cfg_parser.getint('general', 'img_height')
-    score_labeled_data(postprocess_dir, data_dir, img_width, img_height)
-    
 
-def score_labeled_data(postprocess_dir, data_dir, img_width, img_height):
-    if not is_labeled(data_dir) or not is_labeled(postprocess_dir):
-        print "Scoring is only possible for ground-truth labeled data"
-        return
-    categories = ["training/", "validation/", "test/"]
-    for c in categories:
-        ground_truth_rois, filenames = load_data(data_dir + c, img_width, img_height, rois_only=True)
-        rois = default_dict(lambda: [None, None])
-        for i,r in enumerate(ground_truth_rois):
-            rois[filenames[i]][0] = r
-        for f in os.listdir(postprocess_dir + c):
-            filename = os.path.splitext(os.path.basename(f))[0]
-            if f.endswith('.npz'):
-                rois[filename][1] = np.load(postprocess_dir + c + f)
-    ground_truth_rois, convnet_rois = zip(*rois.values())
-    score = Score(ground_truth_rois, convnet_rois)
-    with open(postprocess_dir + c + "score.txt", 'w') as score_file:
-        score_file.write(str(score))
-            
-    
 class Score:
     """Class to calculate and store score.
     
@@ -242,4 +207,43 @@ def plot_multiple_scores(scores):
     print "Score number in order of increasing boundary recall: " + str(num)
     
     plt.show()
+    
 
+def score_labeled_data(postprocess_dir, data_dir, img_width, img_height):
+    categories = ["training/", "validation/", "test/"]
+    for c in categories:
+        ground_truth_rois, filenames = load_data(data_dir + c, img_width, img_height, rois_only=True)
+        rois = default_dict(lambda: [None, None])
+        for i,r in enumerate(ground_truth_rois):
+            rois[filenames[i]][0] = r
+        for f in os.listdir(postprocess_dir + c):
+            filename = os.path.splitext(os.path.basename(f))[0]
+            if f.endswith('.npz'):
+                rois[filename][1] = np.load(postprocess_dir + c + f)
+    ground_truth_rois, convnet_rois = zip(*rois.values())
+    score = Score(ground_truth_rois, convnet_rois)
+    with open(postprocess_dir + c + "score.txt", 'w') as score_file:
+        score_file.write(str(score))
+            
+
+def main(main_config_fpath='../main_config_ar.cfg'):
+    cfg_parser = ConfigParser.SafeConfigParser()
+    cfg_parser.readfp(open(main_config_fpath,'r'))
+    
+    # read parameters
+    postprocess_dir = cfg_parser.get('general', 'postprocess_dir')
+    data_dir = cfg_parser.get('general', 'data_dir')
+    if postprocess_dir[-1] != os.path.sep:
+        postprocess_dir += os.path.sep
+    if data_dir[-1] != os.path.sep:
+        data_dir += os.path.sep
+    img_width = cfg_parser.getint('general', 'img_width')
+    img_height = cfg_parser.getint('general', 'img_height')
+    if not is_labeled(data_dir) or not is_labeled(postprocess_dir):
+        return
+    else:
+        print "Scoring labeled data"
+        score_labeled_data(postprocess_dir, data_dir, img_width, img_height)
+
+if __name__ == "__main__":
+    main()

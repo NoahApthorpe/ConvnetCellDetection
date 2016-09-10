@@ -9,7 +9,7 @@
 '''
 
 import os, sys, subprocess, ConfigParser
-import preprocess, create_znn_files, run_znn_docker, postprocess
+import preprocess, create_znn_files, run_znn_docker, postprocess, score
 
 #TODO: test this method
 def complete_pipeline(main_config_fpath):
@@ -17,6 +17,7 @@ def complete_pipeline(main_config_fpath):
     train(main_config_fpath)
     forward_pass(main_config_fpath)
     postprocessing(main_config_fpath)
+    score_labeled_data(main_config_fpath)
 
 #TODO: test this method
 def create_expt_dir(dir_name):
@@ -65,10 +66,10 @@ def forward_pass(main_config_fpath):
 
 def postprocessing(main_config_fpath):
     print 'Postprocessing results of forward pass...'
-    postprocess.main()
+    postprocess.main(main_config_fpath)
     
-def score_labeled_test_set(main_config_fpath):
-    pass
+def score_labeled_data(main_config_fpath):
+    score.main(main_config_fpath)
 
 def is_main_config(main_config_fpath):
     pass
@@ -90,6 +91,6 @@ if __name__ == "__main__":
                 'train': train,
                 'forward': forward_pass,
                 'postprocess': postprocessing,
-                'score': score_labeled_test_set,
+                'score': score_labeled_data,
                 }
     run_dict[cmd](param)

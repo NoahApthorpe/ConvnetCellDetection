@@ -207,8 +207,7 @@ def parameter_optimization(preprocess_directory, network_output_directory, postp
     return
 
 
-def main():
-    main_config_fpath = '../main_config_ar.cfg'
+def main(main_config_fpath='../main_config_ar.cfg'):
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath,'r'))
 

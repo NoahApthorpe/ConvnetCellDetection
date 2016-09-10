@@ -123,7 +123,7 @@ def remove_ds_store(file_list):
 def main(main_config_fpath = '../main_config_ar.cfg'):
     '''Get user-specified information from main_config.cfg'''
     cfg_parser = ConfigParser.SafeConfigParser()
-    cfg_parser.readfp(open('../main_config_ar.cfg', 'r'))
+    cfg_parser.readfp(open(main_config_fpath, 'r'))
         
     preprocess_directory = cfg_parser.get('general', 'preprocess_dir')
     downsample_directory = cfg_parser.get('general', 'downsample_dir')
