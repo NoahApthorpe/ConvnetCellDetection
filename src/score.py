@@ -26,7 +26,7 @@ from collections import defaultdict
 import os.path
 import load
 from preprocess import is_labeled
-
+import ConfigParser
 
 class Score:
     """Class to calculate and store score.
@@ -212,8 +212,8 @@ def plot_multiple_scores(scores):
 def score_labeled_data(postprocess_dir, data_dir, img_width, img_height):
     categories = ["training/", "validation/", "test/"]
     for c in categories:
-        ground_truth_rois, filenames = load_data(data_dir + c, img_width, img_height, rois_only=True)
-        rois = default_dict(lambda: [None, None])
+        ground_truth_rois, filenames = load.load_data(data_dir + c, img_width, img_height, rois_only=True)
+        rois = defaultdict(lambda: [None, None])
         for i,r in enumerate(ground_truth_rois):
             rois[filenames[i]][0] = r
         for f in os.listdir(postprocess_dir + c):
@@ -233,16 +233,19 @@ def main(main_config_fpath='../main_config_ar.cfg'):
     # read parameters
     postprocess_dir = cfg_parser.get('general', 'postprocess_dir')
     data_dir = cfg_parser.get('general', 'data_dir')
-    if postprocess_dir[-1] != os.path.sep:
-        postprocess_dir += os.path.sep
-    if data_dir[-1] != os.path.sep:
-        data_dir += os.path.sep
     img_width = cfg_parser.getint('general', 'img_width')
     img_height = cfg_parser.getint('general', 'img_height')
-    if not is_labeled(data_dir) or not is_labeled(postprocess_dir):
+    # if not is_labeled(data_dir) or not is_labeled(postprocess_dir): #we haven't been putting test/train/val into a "labeled" folder
+                                                                      #Let's discuss if we should. -AR 09/13/16
+    if not is_labeled(data_dir):
+        print "original data_dir was not called 'labeled'. Aborting scoring."
         return
     else:
         print "Scoring labeled data"
+        if postprocess_dir[-1] != os.path.sep:
+            postprocess_dir += os.path.sep
+        if data_dir[-1] != os.path.sep:
+            data_dir += os.path.sep
         score_labeled_data(postprocess_dir, data_dir, img_width, img_height)
 
 if __name__ == "__main__":
