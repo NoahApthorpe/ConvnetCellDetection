@@ -220,6 +220,14 @@ def score_labeled_data(postprocess_dir, data_dir, img_width, img_height):
             filename = os.path.splitext(os.path.basename(f))[0]
             if f.endswith('.npz'):
                 rois[filename][1] = np.load(postprocess_dir + c + f)
+    print rois.keys()
+    for f in rois:
+        if rois[f][0] is None:
+            print "Unable to score " + f + " : missing ground truth data"
+            rois.pop(f)
+        elif rois[f][1] is None:
+            print "Unable to score " + f + " : missing convnet data"
+            rois.pop(f)
     ground_truth_rois, convnet_rois = zip(*rois.values())
     score = Score(ground_truth_rois, convnet_rois)
     with open(postprocess_dir + c + "score.txt", 'w') as score_file:
