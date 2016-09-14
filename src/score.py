@@ -221,13 +221,16 @@ def score_labeled_data(postprocess_dir, data_dir, img_width, img_height):
             if f.endswith('.npz'):
                 rois[filename][1] = np.load(postprocess_dir + c + f)
     print rois.keys()
+    files_to_remove = []
     for f in rois:
         if rois[f][0] is None:
             print "Unable to score " + f + " : missing ground truth data"
-            rois.pop(f)
+            files_to_remove.append(f)
         elif rois[f][1] is None:
             print "Unable to score " + f + " : missing convnet data"
-            rois.pop(f)
+            files_to_remove.append(f)
+    for f in files_to_remove:
+        rois.pop(f)
     ground_truth_rois, convnet_rois = zip(*rois.values())
     score = Score(ground_truth_rois, convnet_rois)
     with open(postprocess_dir + c + "score.txt", 'w') as score_file:
