@@ -11,9 +11,12 @@ paper:
 -  N. Apthorpe, et al. ''Automatic cell detection in microscopy data using convolutional networks.'' *Advances in Neural Information Processing Systems.* 2016. 
 
 ## Documentation Contents
+- [Overview](#overview)
 - [Installation](#installation)
 - [General Use](#general-use)
 - [Detailed Parameter Configuration](#detailed-parameter-configuration) (Advanced Users)
+
+## Overview
 
 ## Installation
 
