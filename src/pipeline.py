@@ -48,6 +48,7 @@ def preprocessing(main_config_fpath):
     cmd = cmd_mlab + cmd_cd + cmd_path + cmd_preprocess
     
     print 'Running initial preprocessing steps in MATLAB...'
+    print cmd
     process = subprocess.Popen(cmd, shell=True) 
     process.communicate()
     
