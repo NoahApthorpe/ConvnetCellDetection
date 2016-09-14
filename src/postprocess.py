@@ -210,7 +210,7 @@ def parameter_optimization(preprocess_directory, network_output_directory, postp
 def main(main_config_fpath='../main_config_ar.cfg'):
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath,'r'))
-
+    
     # read parameters
     data_directory = cfg_parser.get('general', 'data_dir')
     downsample_directory = add_path_sep(cfg_parser.get('general', 'downsample_dir'))

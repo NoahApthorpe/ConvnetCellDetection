@@ -101,6 +101,9 @@ def split_labeled_directory(split_dict, dir_to_split,is_ROI_tif, is_post_process
             fname = fname.replace(".zip","_ROI.tif")
         try :
             os.rename(dir_to_split + fname, dir_to_split + subdir + '/' + fname) # move fname into new subdir
+            if is_post_process:
+                fname = fname.split('.')[0] + '.npz'
+                os.rename(dir_to_split + fname, dir_to_split + subdir + '/' + fname)
         except AssertionError:
             print fname, ' was not found in ', dir_to_split, ' while attempting to maintain training/test/validation split'
     

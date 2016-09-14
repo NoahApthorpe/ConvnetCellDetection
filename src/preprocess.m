@@ -9,11 +9,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function preprocess(varargin)
 if nargin < 1
-    cfg_file = '../main_config_ar.cfg';
-else
-    cfg_file = varargin(1);
+    'Please add the config file path as an argument to this function'
+elseif nargin == 1
+    cfg_file = varargin{1};
 end
-   
+
 cfg_parameters = cfg2struct(cfg_file);
 data_dir = cfg_parameters.general.data_dir;
 img_width = cfg_parameters.general.img_width;
