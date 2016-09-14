@@ -9,7 +9,7 @@
 '''
 
 import os, sys, subprocess, ConfigParser
-import preprocess, create_znn_files, run_znn_docker, postprocess, score
+import create_experiment_dir, preprocess, create_znn_files, run_znn_docker, postprocess, score
 
 #TODO: test this method
 def complete_pipeline(main_config_fpath):
@@ -21,19 +21,9 @@ def complete_pipeline(main_config_fpath):
 
 #TODO: test this method
 def create_expt_dir(dir_name):
-    if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
-    else:
-        raise AssertionError('Directory already exists.\n Choose a different name for your new experiment directory. ', dir_name)
-    os.makedirs(dir_name + '/labeled/test')
-    os.makedirs(dir_name + '/labeled/training')
-    os.makedirs(dir_name + '/labeled/validation')
-    print 'new experiment directory ', dir_name, ' created.' 
-    #Should autowrite main_config file?
-    #Then move this method to its own file?
-    #main_config file can be autowritten based on expt_name (e.g. "v1_final")
+    create_experiment_dir.main(dir_name)
     
-    
+
 #TODO: rewrite all files as callable with main_config_fpath as parameter 
 def preprocessing(main_config_fpath):
     #Get paths of MATLAB and preprocessing.m 
@@ -49,7 +39,6 @@ def preprocessing(main_config_fpath):
     cmd = cmd_mlab + '\"' + cmd_cd + cmd_path + cmd_preprocess + cmd_quit + '\"'
     
     print 'Running initial preprocessing steps in MATLAB...'
-    print cmd
     process = subprocess.Popen(cmd, shell=True) 
     process.communicate()
     
@@ -92,7 +81,7 @@ if __name__ == "__main__":
     cmd = sys.argv[1]
     param = sys.argv[2]
     run_dict = {'complete': complete_pipeline,
-                'new_experiment': create_expt_dir,
+                'create': create_expt_dir,
                 'preprocess': preprocessing,
                 'train': train,
                 'forward': forward_pass,

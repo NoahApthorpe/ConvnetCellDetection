@@ -7,7 +7,7 @@
 %     configuration file and runs the downsample_tif
 %     and time_equalize functions on all specified data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function preprocess(varargin)
+function preprocess(varargin) 
 if nargin < 1
     'Please add the config file path as an argument to this function'
 elseif nargin == 1
@@ -46,9 +46,10 @@ if strcmp(data_subdirs{end-1},'labeled')
         downsample_tif(test_dir, downsampled_dir, img_width, img_height,  mean_proj_bin, max_proj_bin);
         downsample_tif(validation_dir, downsampled_dir, img_width, img_height,  mean_proj_bin, max_proj_bin);
     else 
-        copyfile(training_dir, downsampled_dir);
-        copyfile(test_dir, downsampled_dir);
-        copyfile(validation_dir, downsampled_dir);
+        strcat(training_dir, '*')
+        copyfile(strcat(training_dir, '*') , downsampled_dir);
+        copyfile(strcat(test_dir, '*'), downsampled_dir);
+        copyfile(strcat(validation_dir, '*'), downsampled_dir);
     end 
 else
     if do_downsample

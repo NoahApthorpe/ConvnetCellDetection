@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 
-import subprocess, ConfigParser, os
-import signal
-from create_znn_files import dockerize_path
-from preprocess import remove_ds_store
-
 '''
  Module to run ZNN commands in a Docker container 
  
@@ -12,6 +7,13 @@ from preprocess import remove_ds_store
       
  Description: TBA
 '''
+
+import subprocess, ConfigParser, os
+import signal
+from create_znn_files import dockerize_path
+from preprocess import remove_ds_store
+
+
 
 
 '''

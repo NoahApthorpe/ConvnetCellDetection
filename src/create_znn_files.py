@@ -31,7 +31,6 @@ def create_dataset_spec(input_dir, output_dir, file_dict, cfg_parser, main_confi
             files[value[0] - 1] = (input_dir + '/' + fname)
         else:
             files[value[0] - 1] = (input_dir + '/' + value[1] + '/' + fname)
-    
     files = [x for x in files if "_ROI." not in x] # remove all filepaths with '_ROI.'
     files = [x.replace('.tif','') for x in files] # remove .tif file extension
     files = [dockerize_path(x) for x in files]
@@ -42,6 +41,7 @@ def create_dataset_spec(input_dir, output_dir, file_dict, cfg_parser, main_confi
     if not cfg_parser.has_section('fnames'):
         cfg_parser.add_section('fnames')
     for fname in files:
+        print fname
         section_num = file_dict[fname.split('/')[-1] + '.tif'][0]
         s = write_one_section_dataset_spec(s, section_num, '' + fname + '.tif', fname + '_ROI.tif')
         cfg_parser.set('fnames', str(section_num), fname) # write section number (key) and fname (value) to config file
