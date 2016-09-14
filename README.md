@@ -1,5 +1,4 @@
-# Convnet Cell Detection
-Automatic cell detection in microscopy data using convolutional networks
+# Automatic cell detection in microscopy data using convolutional networks
 
 ## Contributers
 - Noah Apthorpe (apthorpe@princeton.edu)
