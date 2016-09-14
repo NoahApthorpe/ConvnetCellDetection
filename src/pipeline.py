@@ -42,10 +42,11 @@ def preprocessing(main_config_fpath):
     matlab_path = cfg_parser.get('general', 'matlab_path')
     src_path = os.path.dirname(os.path.abspath(__file__))
     cmd_mlab = matlab_path + ' -nodesktop -nosplash -r '
-    cmd_cd = '\"cd(\'' + os.path.dirname(os.path.abspath(__file__)) + '\'); '
+    cmd_cd = 'cd(\'' + os.path.dirname(os.path.abspath(__file__)) + '\'); '
     cmd_path = 'path(path, \'' + os.path.dirname(os.path.abspath(__file__)) + '\'); '
-    cmd_preprocess = 'preprocess(\'' + main_config_fpath + '\')\"' 
-    cmd = cmd_mlab + cmd_cd + cmd_path + cmd_preprocess
+    cmd_preprocess = 'preprocess(\'' + main_config_fpath + '\'); '
+    cmd_quit = 'quit;'
+    cmd = cmd_mlab + '\"' + cmd_cd + cmd_path + cmd_preprocess + cmd_quit + '\"'
     
     print 'Running initial preprocessing steps in MATLAB...'
     print cmd
