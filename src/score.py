@@ -219,7 +219,7 @@ def score_labeled_data(postprocess_dir, data_dir, img_width, img_height):
         for f in os.listdir(postprocess_dir + c):
             filename = os.path.splitext(os.path.basename(f))[0]
             if f.endswith('.npz'):
-                rois[filename][1] = np.load(postprocess_dir + c + f)
+                rois[filename][1] = np.load(postprocess_dir + c + f)['arr_0']
     print rois.keys()
     files_to_remove = []
     for f in rois:
