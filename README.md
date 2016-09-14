@@ -19,13 +19,9 @@ If you publish the results of research using this tool or any of the code contai
 - [Detailed Parameter Configuration](#detailed-parameter-configuration) (Advanced Users)
 
 ## Overview
-Convnet Cell Detection is a data proessing pipeline for detecting cells in microscope images using convolutional neural networks (convnets).  We developed and tested this pipeline to find neuron cell bodies in two-photon microscope images, but believe that the technique will be be effective for other cellular microscopy applications as well. 
+Convnet Cell Detection is a data processing pipeline for detecting cells in microscope images using convolutional neural networks (convnets).  We developed and tested this pipeline to find neuron cell bodies in two-photon microscope images, but believe that the technique will be be effective for other cellular microscopy applications as well. 
 
-Convolutional networks are the current state-of-the-art machine learning technique for image and video analysis. There are many excellent online resources available if you would like to learn more about convnets, but we have structured the Convnet Cell Detection pipeline such that only a cursory understanding is necessary.  Convolutional networks are a supervised learning technique, meaning that they need to be provided with data 
-
-
-
-
+Convolutional networks are the current state-of-the-art machine learning technique for image and video analysis. There are many excellent online resources available if you would like to learn more about convnets, but we have structured the Convnet Cell Detection pipeline such that only a cursory understanding is necessary.  Convolutional networks are a supervised learning technique, meaning that they need to be trained with data that has already been labeled using 
 
 ## Installation
 
