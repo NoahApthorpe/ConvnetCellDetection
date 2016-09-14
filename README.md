@@ -2,8 +2,8 @@
 Automatic cell detection in microscopy data using convolutional networks
 
 ## Contributers
-Noah Apthorpe (apthorpe@princeton.edu)
-Alex Riordan (ariordan@princeton.edu)
+- Noah Apthorpe (apthorpe@princeton.edu)
+- Alex Riordan (ariordan@princeton.edu)
 
 ## Citing
 We encourage the use of this tool for research and are excited to see Convnet Cell Detection being applied to experimental workflows.  
