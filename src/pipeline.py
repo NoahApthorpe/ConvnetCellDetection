@@ -43,7 +43,7 @@ def preprocessing(main_config_fpath):
     src_path = os.path.dirname(os.path.abspath(__file__))
     cmd_mlab = matlab_path + ' -nodesktop -nosplash -r '
     cmd_cd = '\"cd(\'' + os.path.dirname(os.path.abspath(__file__)) + '\'); '
-    cmd_path = 'path(\'' + os.path.dirname(os.path.abspath(__file__)) + '\'); '
+    cmd_path = 'path(path, \'' + os.path.dirname(os.path.abspath(__file__)) + '\'); '
     cmd_preprocess = 'preprocess(\'' + main_config_fpath + '\')\"' 
     cmd = cmd_mlab + cmd_cd + cmd_path + cmd_preprocess
     
