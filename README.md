@@ -16,6 +16,11 @@ If you publish the results of research using this tool or any of the code contai
 - [Overview](#overview)
 - [Installation](#installation)
 - [General Use](#general-use)
+  - [Set up new experiment](#set-up-new-experiment)
+  - [Prepare configuration file](#prepare-configuration-file)
+  - [Provide training data](#provide-training-data)
+  - [Run Convnet Cell Detection pipeline](#run-convnet-cell-detection-pipeline)
+  - [Label new data](#label-new-data)
 - [Detailed Parameter Configuration](#detailed-parameter-configuration) (Advanced Users)
 
 ## Overview
@@ -35,7 +40,7 @@ The Convnet Cell Detection tool uses the ZNN convolutional network implementatio
 
 All interaction and customization of the Convnet Cell Detection tool occur through the `pipeline.py` script and the `main_config.cfg` configuration file. The following sections will walk through the process of setting up and using the tool with default settings. 
 
-#### Setup a new experiment directory
+#### Set up new experiment
 
 #### Prepare configuration file
 
@@ -45,14 +50,14 @@ Training data for Convnet Cell Dectection should be a representative sample of y
 
 The amount of training data you need depends on your particular application and accuracy requirements.  In general, more training data results in more accurate cell detection, but increasing the amount of training data has diminishing returns. The best solution is to use existing hand-labeled images from previous analyses. Otherwise, decide on a tradeoff between hand-labeling time and convolutonal network accuracy, remembering that it's always possible to add additional training data if necessary. 
 
-#### Run Convnet Cell Detection Pipeline
+#### Run Convnet Cell Detection pipeline
 
 ###### Preprocessing
 
-###### Convolutional Network Training
+###### Train convolutional network
 
 ###### Postprocessing
 
-#### Label new data (forward pass)
+#### Label new data
 
 ## Detailed Parameter Configuration
