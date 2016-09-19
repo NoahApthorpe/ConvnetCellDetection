@@ -44,8 +44,6 @@ The `data/example` directory contains an correctly set up example experiment you
 
 #### Set up new experiment
 
-
-
 #### Prepare configuration file
 
 #### Provide training data
@@ -58,7 +56,7 @@ Training data should have the following format:
 - Image sequences should be multipage TIFF files 
 - Labels should be in ImageJ/Fiji ROI format with one zipped folder containing individual `.roi` files per image sequence.
 
-Training images and labels should be divided into 3 sets, 1) `training`, 2) `validation`, and 3) `test`, and placed in the corresponding folders in the `labeled/` directory.
+Training images and labels should be divided into 3 sets, 1) `training`, 2) `validation`, and 3) `test`, and placed in the corresponding folders in the `labeled/` directory. The `training` data is used to train the convolutional network.  The `validation` data is used to optimize various postprocessing parameters. The `test` data is used to evaluate the accuracy of the trained network.  We recommend an 60%/20%/20% training/validation/test split if you have lots of labeled data and a 80%/10%/10% split otherwise. 
 
 #### Run Convnet Cell Detection pipeline
 
