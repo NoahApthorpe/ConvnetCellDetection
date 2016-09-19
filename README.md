@@ -32,7 +32,7 @@ Convolutional networks are a supervised learning technique, meaning that they ne
 
 Once you have trained a convolutional network, you can use it to quickly detect cells in all new images from the same or similar experimental procedure. The Convnet Cell Detection tool has a straightforward command-line and configuration file interface to make this as easy as possible. 
 
-The Convnet Cell Detection tool uses the ZNN convolutional network implementation ([https://github.com/seung-lab/znn-release](https://github.com/seung-lab/znn-release)).  While you do not need to understand ZNN in order to use this tool, advanced users may wish to read the [ZNN documentation](http://znn-release.readthedocs.io/en/latest/index.html) to understand some intermediate files created by the Convnet Cell Detection tool pipeline. 
+The Convnet Cell Detection tool uses the ZNN convolutional network implementation ([https://github.com/seung-lab/znn-release](https://github.com/seung-lab/znn-release)).  While you do not need to understand ZNN in order to use this tool, advanced users may wish to read the [ZNN documentation](http://znn-release.readthedocs.io/en/latest/index.html) to understand some intermediate files created by the Convnet Cell Detection pipeline. 
 
 ## Installation
 
@@ -40,7 +40,11 @@ The Convnet Cell Detection tool uses the ZNN convolutional network implementatio
 
 All interaction and customization of the Convnet Cell Detection tool occur through the `pipeline.py` script and the `main_config.cfg` configuration file. The following sections will walk through the process of setting up and using the tool with default settings. 
 
+The `data/example` directory contains an correctly set up example experiment you can use for comparing file types and naming conventions. 
+
 #### Set up new experiment
+
+
 
 #### Prepare configuration file
 
@@ -49,6 +53,12 @@ All interaction and customization of the Convnet Cell Detection tool occur throu
 Training data for Convnet Cell Dectection should be a representative sample of your microscopy images large enough to showcase the varying appearance of cells you wish to find. The convolutional network will learn to detect cells that share characteristics with the labeled cells in the training data. If you are missing an entire class or orientation of cells in the training data, do not expect the convolutional network to detect them either.  
 
 The amount of training data you need depends on your particular application and accuracy requirements.  In general, more training data results in more accurate cell detection, but increasing the amount of training data has diminishing returns. The best solution is to use existing hand-labeled images from previous analyses. Otherwise, decide on a tradeoff between hand-labeling time and convolutonal network accuracy, remembering that it's always possible to add additional training data if necessary. 
+
+Training data should have the following format:
+- Image sequences should be multipage TIFF files 
+- Labels should be in ImageJ/Fiji ROI format with one zipped folder containing individual `.roi` files per image sequence.
+
+Training images and labels should be divided into 3 sets, 1) `training`, 2) `validation`, and 3) `test`, and placed in the corresponding folders in the `labeled/` directory.
 
 #### Run Convnet Cell Detection pipeline
 
