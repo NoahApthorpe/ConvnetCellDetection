@@ -38,13 +38,19 @@ The Convnet Cell Detection tool uses the ZNN convolutional network implementatio
 
 ## General Use
 
-All interaction and customization of the Convnet Cell Detection tool occur through the `pipeline.py` script and the `main_config.cfg` configuration file. The following sections will walk through the process of setting up and using the tool with default settings. 
+The following sections will walk through the process of setting up and using the Convnet Cell Detection tool with default settings.  
 
-The `data/example` directory contains an correctly set up example experiment you can use for comparing file types and naming conventions. 
+All `python` commands must either be run from the `src` directory or have `src/` appended to the name of the `.py` file. 
 
 #### Set up new experiment
 
+Run `python create_experiment_dir.py <experiment_name>` to create a new folder in the `data` directory for your experiment. This folder will be pre-initialized with a `main_config.cfg` configuration file and a `labeled` directory to hold pre-labeled training, valdiation, and testing data.
+
 #### Prepare configuration file
+
+You will next need to make a few changes to the `main_config.cfg` configuration file in your experiment directory.  These changes are the minimum necessary for the Convnet Cell Detection tool to work on your system. Details on the other parameters in the `main_config.cfg` file are provided in the [Detailed Parameter Configuration](#detailed-parameter-configuration) section.
+
+
 
 #### Provide training data
 
@@ -53,10 +59,13 @@ Training data for Convnet Cell Dectection should be a representative sample of y
 The amount of training data you need depends on your particular application and accuracy requirements.  In general, more training data results in more accurate cell detection, but increasing the amount of training data has diminishing returns. The best solution is to use existing hand-labeled images from previous analyses. Otherwise, decide on a tradeoff between hand-labeling time and convolutonal network accuracy, remembering that it's always possible to add additional training data if necessary. 
 
 Training data should have the following format:
-- Image sequences should be multipage TIFF files 
-- Labels should be in ImageJ/Fiji ROI format with one zipped folder containing individual `.roi` files per image sequence.
+- Image sequences should be multipage TIFF files with `.tiff` or `.tif` extensions
+- Labels should be in ImageJ/Fiji ROI format with one `.zip` zipped folder containing individual `.roi` files per image sequence.
+- Each image sequence  should have the same name as its corresponding zipped ROI folder, e.g. V1_09_2016.tiff and V1_09_2016.zip.  There are no restictions on the names themselves, and the names will be preserved throughout the Convnet Cell Detection Pipeline.
 
-Training images and labels should be divided into 3 sets, 1) `training`, 2) `validation`, and 3) `test`, and placed in the corresponding folders in the `labeled/` directory. The `training` data is used to train the convolutional network.  The `validation` data is used to optimize various postprocessing parameters. The `test` data is used to evaluate the accuracy of the trained network.  We recommend an 60%/20%/20% training/validation/test split if you have lots of labeled data and a 80%/10%/10% split otherwise. 
+Training images and labels should be divided into 3 sets, 1) `training`, 2) `validation`, and 3) `test`, and placed in the corresponding folders in the `data/<experiment_name>/labeled/` directory. The `training` data is used to train the convolutional network.  The `validation` data is used to optimize various postprocessing parameters. The `test` data is used to evaluate the accuracy of the trained network.  We recommend an 60%/20%/20% training/validation/test split if you have lots of labeled data and a 80%/10%/10% split otherwise. 
+
+The `data/example` directory contains an correctly set up example experiment you can use for comparing file types and naming conventions. 
 
 #### Run Convnet Cell Detection pipeline
 
