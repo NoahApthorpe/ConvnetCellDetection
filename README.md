@@ -40,8 +40,8 @@ The Convnet Cell Detection pipeline relies on a number of software packages, all
 ###MATLAB (ver R2015b)
   The initial image preprocessing steps of the pipeline rely on MATLAB. We have only tested the pipeline using MATLAB version R2015b, however more recent versions are likely to work as well.  
   
-To download MATLAB R2015b, follow the instructions here: 
-https://www.mathworks.com/matlabcentral/answers/99265-how-do-i-download-an-older-version-of-matlab
+To download MATLAB R2015b, follow the instructions here:   
+ https://www.mathworks.com/matlabcentral/answers/99265-how-do-i-download-an-older-version-of-matlab
 
 ###Python 2.7 and related modules
   The majority of the pipeline is based on code written in Python. The Anaconda platform is a convenient tool for installing and maintaining Python modules and environments.  
