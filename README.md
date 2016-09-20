@@ -120,6 +120,15 @@ Each of the following sections describes a component of the pipeline in greater 
 
 ###### Preprocessing
 
+The preprocessing component of the Convnet Cell Detection pipeline prepares supplied images for convnet training, as follows:
+
+1. Downsampling 
+2. Time equalize
+3. Contrast improvement: Pixel values above the 99th percentile and below the 3rd percentile are clipped and the resulting values are normalized to [0,1].
+4. Get centroids
+
+You can run just the preprocessing component of the pipeline by running `python pipeline.py preprocess`.
+
 ###### Train convolutional network
 
 ###### Postprocessing
