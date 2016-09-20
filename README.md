@@ -49,28 +49,29 @@ The Convnet Cell Detection pipeline relies on a number of software packages, all
   https://www.continuum.io/downloads
 	
   We’ll need to use Anaconda to install some additional python modules. To do so, navigate to the following links and run the commands therein in a terminal window: 
-   https://anaconda.org/anaconda/pil
-   https://anaconda.org/anaconda/scikit-image
-   https://anaconda.org/conda-forge/tifffile
+  https://anaconda.org/anaconda/pil
+  https://anaconda.org/anaconda/scikit-image
+  https://anaconda.org/conda-forge/tifffile
 
 ####Docker
   Our pipeline uses the Docker platform to run ZNN's suite of convolutional neural network tools. Docker is used to create software containers that can be run on any type of machine or operating system. 
 
-	Install the Docker engine for your operating system by following the instructions here: https://docs.docker.com/engine/installation/
+  Install the Docker engine for your operating system by following the instructions here: https://docs.docker.com/engine/installation/
 	
-	To check that Docker is working, run the following commands in a terminal window:
+  To check that Docker is working, run the following commands in a terminal window:
         docker-machine create -d virtualbox --virtualbox-memory 4096 default
-	      docker-machine start default
-	      eval $(docker-machine env) #configure shell
-	      docker run hello-world #check that everything is running properly
+	docker-machine start default
+	eval $(docker-machine env) #configure shell
+	docker run hello-world #check that everything is running properly
 	
-	Now install the ZNN Docker Image by running
-		docker pull jpwu/znn:v0.1.4
+Now install the ZNN Docker Image by running
+	docker pull jpwu/znn:v0.1.4
 
 ####FIJI 
   FIJI (FIJI Is Just ImageJ) is an image processing package. Our pipeline uses it to preprocess data images and postprocess the output of the convnets. 
 
-	Install Fiji using the links provided here: http://imagej.net/Fiji/Downloads
+  Install Fiji using the links provided here: 
+  http://imagej.net/Fiji/Downloads
 
 
 #####You are now ready to use the convnet cell detection pipeline. 
