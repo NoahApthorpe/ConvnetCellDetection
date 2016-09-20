@@ -45,13 +45,13 @@ The Convnet Cell Detection pipeline relies on a number of software packages, all
 ####Python 2.7 and related modules
   The majority of the pipeline is based on code written in Python. The Anaconda platform is a convenient tool for installing and maintaining Python modules and environments.  
 
-	Download the Anaconda platform appropriate for your operating system here: 
-	https://www.continuum.io/downloads
+  Download the Anaconda platform appropriate for your operating system here: 
+  https://www.continuum.io/downloads
 	
-	We’ll need to use Anaconda to install some additional python modules. To do so, navigate to the following links and run the commands therein in a terminal window: 
-	https://anaconda.org/anaconda/pil
-	https://anaconda.org/anaconda/scikit-image
-	https://anaconda.org/conda-forge/tifffile
+  We’ll need to use Anaconda to install some additional python modules. To do so, navigate to the following links and run the commands therein in a terminal window: 
+   https://anaconda.org/anaconda/pil
+   https://anaconda.org/anaconda/scikit-image
+   https://anaconda.org/conda-forge/tifffile
 
 ####Docker
   Our pipeline uses the Docker platform to run ZNN's suite of convolutional neural network tools. Docker is used to create software containers that can be run on any type of machine or operating system. 
