@@ -55,7 +55,7 @@ https://www.continuum.io/downloads
   - https://anaconda.org/conda-forge/tifffile
 
 ###Docker
-  Our pipeline uses the Docker platform to run ZNN's suite of convolutional neural network tools. Docker is used to create software containers that can be run on any type of machine or operating system. 
+  Our pipeline uses the Docker platform to run ZNN's suite of convnet tools. Docker is used to create software containers that can be run on any machine or operating system. 
 
   Install the Docker engine for your operating system by following the instructions here: https://docs.docker.com/engine/installation/
 	
