@@ -59,16 +59,17 @@ The Convnet Cell Detection pipeline relies on a number of software packages, all
   Install the Docker engine for your operating system by following the instructions here: https://docs.docker.com/engine/installation/
 	
   To check that Docker is working, run the following commands in a terminal window:
-        	```
-        	docker-machine create -d virtualbox --virtualbox-memory 4096 default
-		docker-machine start default
-		eval $(docker-machine env) #configure shell
-		docker run hello-world #check that everything is running properly
-		```
-Now install the ZNN Docker Image by running
-		```
-		docker pull jpwu/znn:v0.1.4
-		```
+  ```
+  docker-machine create -d virtualbox --virtualbox-memory 4096 default
+  docker-machine start default
+  eval $(docker-machine env) #configure shell
+  docker run hello-world #check that everything is running properly
+  ```
+  
+  Now install the ZNN Docker Image by running
+  ```
+  docker pull jpwu/znn:v0.1.4
+  ```
 ###FIJI 
   FIJI (FIJI Is Just ImageJ) is an image processing package. Our pipeline uses it to preprocess data images and postprocess the output of the convnets. 
 
