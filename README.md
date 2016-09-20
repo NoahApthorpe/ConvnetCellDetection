@@ -38,7 +38,7 @@ The Convnet Cell Detection tool uses the ZNN convolutional network implementatio
 The Convnet Cell Detection pipeline relies on a number of software packages, all of which (except for MATLAB) are free and open source. Please follow the instructions below to install each package. 
 
 ###MATLAB (ver R2015b)
-  >The initial image preprocessing steps of the pipeline rely on MATLAB. We have only tested the pipeline using MATLAB version R2015b, however more recent versions are likely to work as well.  
+  The initial image preprocessing steps of the pipeline rely on MATLAB. We have only tested the pipeline using MATLAB version R2015b, however more recent versions are likely to work as well.  
   
   To download MATLAB R2015b, follow the instructions here: https://www.mathworks.com/matlabcentral/answers/99265-how-do-i-download-an-older-version-of-matlab
 
