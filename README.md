@@ -122,7 +122,7 @@ Each of the following sections describes a component of the pipeline in greater 
 
 The preprocessing component of the Convnet Cell Detection pipeline prepares supplied images for convnet training, as follows:
 
-1. Downsampling (*off by default*): The images stacks are average-pooled with 167-frame strides and then max-pooled with 6-frame strides. This downsampling reduces noise and makes the dataset into a more manageable size. *This step can be turned on by setting `do_downsample = 1` in the `[general]` section of the `main_config.cfg` file.*
+1. Downsampling (*off by default*): The images stacks are average-pooled with default 167-frame strides and then max-pooled with default 6-frame strides. This downsampling reduces noise and makes the dataset into a more manageable size. *This step can be turned on by setting `do_downsample = 1` in the `[general]` section of the `main_config.cfg` file.*
 2. Time equalize: All image stacks are equalized to the same number of frames by averaging over sets of consecutive frames. This is necessary for 3-dimensional filters in the ZNN convolutional network implementation. 
 3. Contrast improvement: Pixel values above the 99th percentile and below the 3rd percentile are clipped and the resulting values are normalized to [0,1].
 4. Convert cell labels to centroids: Our research indicates that convolutional networks do a better job distinguishing adjacent cells if the cell labels provided in the training data are reduced to a small centroid.  
@@ -130,6 +130,8 @@ The preprocessing component of the Convnet Cell Detection pipeline prepares supp
 You can run just the preprocessing component of the pipeline by running `python pipeline.py preprocess`
 
 ###### Train convolutional network
+
+The training component of the pipeline
 
 ###### Postprocessing
 
