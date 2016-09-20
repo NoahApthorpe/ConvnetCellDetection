@@ -48,9 +48,9 @@ Run `python create_experiment_dir.py <experiment_name>` to create a new folder i
 
 #### Prepare configuration file
 
-You will next need to make a few changes to the `main_config.cfg` configuration file in your experiment directory.  These changes are the minimum necessary for the Convnet Cell Detection tool to work on your system. Details on the other parameters in the `main_config.cfg` file are provided in the [Detailed Parameter Configuration](#detailed-parameter-configuration) section.
+You will next need to make one change to the `main_config.cfg` configuration file in your experiment directory.  This is the minimum necessary for the Convnet Cell Detection tool to work on your system. Details about further customization using other parameters in the `main_config.cfg` file are provided in the [Detailed Parameter Configuration](#detailed-parameter-configuration) section.
 
-
+1. Change the `matlab_path` parameter in the `general` section to point to your system's matlab installation.  The default setting is for a Mac OSX system with Matlab R2015b.
 
 #### Provide training data
 
@@ -69,6 +69,12 @@ The `data/example` directory contains an correctly set up example experiment you
 
 #### Run Convnet Cell Detection pipeline
 
+All components of the Convnet Cell Detection pipeline are acessed via the `pipeline.py` script.  You can choose to run the entire pipeline at once or execute each component individually. 
+
+The command `python pipeline.py complete` will run the entire pipeline, training a new convolutional network from your training data and scoring the result. You can then move directly to [labeling new data](#label-new-data) to use the trained convnet to detect cells in unlabeled images. 
+
+Each of the following sections describes a component of the pipeline in greater detail and provides instructions for executing it individually. 
+
 ###### Preprocessing
 
 ###### Train convolutional network
@@ -78,3 +84,5 @@ The `data/example` directory contains an correctly set up example experiment you
 #### Label new data
 
 ## Detailed Parameter Configuration
+
+#### Custom Network Architecture
