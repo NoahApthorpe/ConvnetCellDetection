@@ -15,7 +15,7 @@
 #
 ################################################################
 
-import os, shutil, ConfigParser
+import os, shutil, ConfigParser, sys
 
 def create_experiment_directory(dir_name):
     if not os.path.exists(dir_name):
@@ -54,10 +54,14 @@ def copy_main_config(dir_name):
         cfg_parser.write(configfile)
         
         
-def main(dir_name = '/Users/sergiomartinez/Documents/ConvnetCellDetection/data/new_expt'):
+def main(dir_name = '../data/new_expt'):
     create_experiment_directory(dir_name)
     copy_main_config(dir_name)
     print 'new experiment directory', dir_name, 'successfully created.'
     
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1:
+        dir_name = '../data/' + sys.argv[1]
+        main(dir_name)
+    else:
+        main()
