@@ -37,7 +37,7 @@ def complete_pipeline(main_config_fpath):
     score_labeled_data(main_config_fpath)
 
 
-def create(experiment_name):
+def create_expt_dir(experiment_name):
     '''Create directory structure and default config file for new experiment'''
     create_experiment_dir.main(experiment_name)
 

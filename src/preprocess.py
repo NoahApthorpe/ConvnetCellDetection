@@ -14,14 +14,16 @@
 #
 ###################################################
 
+import sys
+import shutil
 import numpy as np
 import skimage.io
 import os.path
-from load import load_data
+from load import load_data, load_stack
 import tifffile
 from PIL import Image
 import ConfigParser
-from scipy.ndimage.interpolation import zoom
+from scipy.ndimage import zoom
 
 
 def improve_contrast(data, upper_contrast, lower_contrast):
@@ -68,43 +70,47 @@ def add_pathsep(directory_name):
     '''Add path seperater to end of directory name if not already there'''
     if directory_name[-1] != os.sep:
         return directory_name + os.sep
-    return directory name
+    return directory_name
 
 
 def is_labeled(dir_path):
     '''Returns true if the argument path is to the special 'labeled' directory'''
-    return dir_path.split(os.sep)[-1] == 'labeled'
+    return os.path.basename(os.path.dirname(dir_path)) == 'labeled'
 
 
 def downsample_helper(files_list, img_width, img_height, mean_proj_bins, max_proj_bins):
     '''Mean and max project to covert image files in list to single downsampled numpy array'''
-    mean_stack = np.zeros((0, img_width, img_height))
-    full_stack = np.zeros((0, img_width, img_height))
+    mean_stack = np.zeros((0, img_width, img_height), dtype=np.float32)
+    full_stack = np.zeros((0, img_width, img_height), dtype=np.float32)
 
     # mean projections
     for f in files_list:
-        full_stack = np.vstack(full_stack, load.load_stack(f))
+        full_stack = np.vstack((full_stack, load_stack(f)))
         for i in range(0, full_stack.shape[0], mean_proj_bins):
             if full_stack.shape[0] - (i + mean_proj_bins) < mean_proj_bins and f == files_list[-1]:
                     m = np.mean(full_stack[i:, :, :], axis=0)
-                    mean_stack = np.vstack(mean_stack, m)
+                    m = np.expand_dims(m, axis=0)
+                    mean_stack = np.vstack((mean_stack, m))
                     break
             elif full_stack.shape[0] - i < mean_proj_bins:
                 full_stack = full_stack[i:, :, :]
             else:
                 m = np.mean(full_stack[i:i+mean_proj_bins, :, :], axis=0)
-                mean_stack = np.vstack(mean_stack, m)
+                m = np.expand_dims(m, axis=0)
+                mean_stack = np.vstack((mean_stack, m))
 
     # max projections
-    max_stack = np.zeros((0, img_width, img_height))
+    max_stack = np.zeros((0, img_width, img_height), dtype=np.float32)
     for i in range(0, mean_stack.shape[0], max_proj_bins):
         if mean_stack.shape[0] - (i + max_proj_bins) < max_proj_bins:
             m = np.max(mean_stack[i:, :, :], axis=0)
-            max_stack = np.vstack(max_stack, m)
+            m = np.expand_dims(m, axis=0)
+            max_stack = np.vstack((max_stack, m))
             break
         else:
             m = np.max(mean_stack[i:i+max_proj_bins, :, :], axis=0)
-            max_stack = np.vstack(max_stack, m)
+            m = np.expand_dims(m, axis=0)
+            max_stack = np.vstack((max_stack, m))
     return max_stack
 
 
@@ -114,6 +120,10 @@ def downsample(src_dir, dst_dir, img_width, img_height, mean_proj_bins, max_proj
     for f in os.listdir(src_dir):
         ext = os.path.splitext(f)[1].lower()
 
+        # skip hidden files
+        if ext.strip() == '':
+            continue
+        
         # copy .zip roi files without modification
         if ext == '.zip' and do_copy:
             shutil.copy(src_dir + f, dst_dir)
@@ -125,13 +135,12 @@ def downsample(src_dir, dst_dir, img_width, img_height, mean_proj_bins, max_proj
             tifffile.imsave(dst_dir + f, result.squeeze())
 
         # downsample folders with videos split into smaller time chunks
-        elif os.isdir(src_dir + f):
+        elif os.path.isdir(src_dir + f):
             sub_videos = [src_dir + add_pathsep(f) + v for v in os.listdir(src_dir + f)
                           if (os.path.splitext(v)[1].lower() == '.tif' or
                               os.path.splitext(v)[1].lower() == '.tiff')]
-            result = downsample_helper(sub_videos, img_width, img_height,
-                                       mean_proj_bins, max_proj_bins)
-            tifffile.imsave(dst_dir + add_pathsep(f) + '.tif', result.squeeze())
+            result = downsample_helper(sub_videos, img_width, img_height, mean_proj_bins, max_proj_bins)
+            tifffile.imsave(dst_dir + f + '.tif', result.squeeze())
 
 
 def time_equalize(src_dir, dst_dir, img_width, img_height, new_time_depth):
@@ -146,9 +155,9 @@ def time_equalize(src_dir, dst_dir, img_width, img_height, new_time_depth):
 
         # time equalize indvidual videos
         elif ext == '.tif' or ext == '.tiff':
-            data = load.load_stack(src_dir + f)
-            resized = zoom(data, (float(new_time_depth)/data.shape[0],
-                                  data.shape[1], data.shape[2]))
+            data = load_stack(src_dir + f)
+            #resized = imresize(data, (new_time_depth, data.shape[1], data.shape[1]), interp='bicubic', mode='F')
+            resized = zoom(data, (float(new_time_depth)/data.shape[0], 1, 1))
             tifffile.imsave(dst_dir + f, resized.squeeze())
 
 
@@ -233,7 +242,7 @@ def main(main_config_fpath='../main_config_ar.cfg'):
     img_width = cfg_parser.getint('general', 'img_width')
     img_height = cfg_parser.getint('general', 'img_height')
     mean_proj_bins = cfg_parser.getint('preprocessing', 'mean_proj_bin')
-    max_proj_bins = cfg_parser.getint('preprocessing', 'max_proj_bins')
+    max_proj_bins = cfg_parser.getint('preprocessing', 'max_proj_bin')
     new_time_depth = cfg_parser.getint('preprocessing', 'time_equalize')
     upper_contrast = cfg_parser.getfloat('preprocessing', 'upper_contrast')
     lower_contrast = cfg_parser.getfloat('preprocessing', 'lower_contrast')
@@ -241,7 +250,7 @@ def main(main_config_fpath='../main_config_ar.cfg'):
 
     # run preprocessing
     for ttv in ttv_list if is_labeled(data_dir) else ['']:
-        if cfg.parser.getboolean('general', 'do_downsample'):
+        if cfg_parser.getboolean('general', 'do_downsample'):
             downsample(data_dir + ttv, downsample_dir + ttv,
                        img_width, img_height, mean_proj_bins, max_proj_bins)
             time_equalize(downsample_dir + ttv, downsample_dir + ttv,
@@ -249,10 +258,10 @@ def main(main_config_fpath='../main_config_ar.cfg'):
         else:
             time_equalize(data_dir + ttv, downsample_dir + ttv,
                           img_width, img_height, new_time_depth)
-        data, file_names = load_data(downsample_directory + ttv, img_width, img_height)
+        data, file_names = load_data(downsample_dir + ttv, img_width, img_height)
         data = improve_contrast(data, upper_contrast, lower_contrast)
         data = get_centroids(data, centroid_radius, img_width, img_height)
-        save_tifs(data, file_names, preprocess_directory + ttv)
+        save_tifs(data, file_names, preprocess_dir + ttv)
 
 
 if __name__ == "__main__":
