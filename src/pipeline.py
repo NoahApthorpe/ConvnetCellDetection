@@ -1,83 +1,83 @@
-#!/usr/bin/env python
+###############################################################
+#
+# Master file for running ConvNet pipeline
+#
+# Author: Alex Riordan & Noah Apthorpe
+#
+# Description: Interface to run ConvNet pipeline
+#
+# Usage: python pipeline.py create <experiment name>
+#        python pipeline.py <pipeline step> <config file path>
+#
+#        pipeline step options:
+#           * complete (run entire pipeline)
+#           * preprocess
+#           * train
+#           * postprocess
+#           * forward
+#           * score
+#
+##############################################################
 
-'''
- Master file for running ConvNet pipeline 
- 
- Author: Alex Riordan
-      
- Description: TBA
-'''
+import sys
+import create_experiment_dir
+import preprocess
+import create_znn_files
+import run_znn_docker
+import postprocess
+import score
 
-import os, sys, subprocess, ConfigParser
-import create_experiment_dir, preprocess, create_znn_files, run_znn_docker, postprocess, score
 
-#TODO: test this method
 def complete_pipeline(main_config_fpath):
+    '''Run entire pipeline'''
     preprocessing(main_config_fpath)
     train(main_config_fpath)
     forward_pass(main_config_fpath)
     postprocessing(main_config_fpath)
     score_labeled_data(main_config_fpath)
 
-#TODO: test this method
-def create_expt_dir(dir_name):
-    create_experiment_dir.main(dir_name)
-    
 
-#TODO: rewrite all files as callable with main_config_fpath as parameter 
+def create(experiment_name):
+    '''Create directory structure and default config file for new experiment'''
+    create_experiment_dir.main(experiment_name)
+
+
 def preprocessing(main_config_fpath):
-    #Get paths of MATLAB and preprocessing.m 
-    cfg_parser = ConfigParser.SafeConfigParser()
-    cfg_parser.readfp(open(main_config_fpath, 'r'))
-    matlab_path = cfg_parser.get('general', 'matlab_path')
-    src_path = os.path.dirname(os.path.abspath(__file__))
-    cmd_mlab = matlab_path + ' -nodesktop -nosplash -r '
-    cmd_cd = 'cd(\'' + os.path.dirname(os.path.abspath(__file__)) + '\'); '
-    cmd_path = 'path(path, \'' + os.path.dirname(os.path.abspath(__file__)) + '\'); '
-    cmd_preprocess = 'preprocess(\'' + main_config_fpath + '\'); '
-    cmd_quit = 'quit;'
-    cmd = cmd_mlab + '\"' + cmd_cd + cmd_path + cmd_preprocess + cmd_quit + '\"'
-    
-    print 'Running initial preprocessing steps in MATLAB...'
-    process = subprocess.Popen(cmd, shell=True) 
-    process.communicate()
-    
-    print 'Running final preprocessing in Python...'
+    '''Run preprocessing'''
+    print 'Running preprocessing...'
     preprocess.main(main_config_fpath)
 
+
 def train(main_config_fpath):
+    '''Train convnet using ZNN'''
     run_type = 'training'
     print 'Creating ZNN files for training...'
     create_znn_files.main(main_config_fpath, run_type)
     print 'Preparing to run ZNN in Docker for training...'
     run_znn_docker.main(main_config_fpath, run_type)
 
+
 def forward_pass(main_config_fpath):
+    '''Run a forward pass using existing trained network'''
     run_type = 'forward'
     print 'Creating ZNN files for forward pass...'
     create_znn_files.main(main_config_fpath, run_type)
     print 'Preparing to run ZNN in Docker for forward pass...'
     run_znn_docker.main(main_config_fpath, run_type)
 
+
 def postprocessing(main_config_fpath):
+    '''Run postprocessing'''
     print 'Postprocessing results of forward pass...'
     postprocess.main(main_config_fpath)
-    
+
+
 def score_labeled_data(main_config_fpath):
+    '''Score ConvNet precision and accuracy on labeled data'''
     score.main(main_config_fpath)
 
-def is_main_config(main_config_fpath):
-    pass
 
 if __name__ == "__main__":
-    pass
-    #User should point to main_config file for all methods but create_expt_dir
-    #Args string should contain a keyword (e.g. 'complete' or 'forward') that specifies what user wants to do
-    #can use a switch statement to deal with this
-    # 
-    # print 'Number of arguments: ', len(sys.argv), ' arguments'
-    # print 'Argument list: ', str(sys.argv)
-    
     cmd = sys.argv[1]
     param = sys.argv[2]
     run_dict = {'complete': complete_pipeline,
@@ -86,6 +86,5 @@ if __name__ == "__main__":
                 'train': train,
                 'forward': forward_pass,
                 'postprocess': postprocessing,
-                'score': score_labeled_data,
-                }
+                'score': score_labeled_data}
     run_dict[cmd](param)
