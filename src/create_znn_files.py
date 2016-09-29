@@ -13,22 +13,22 @@ import sys
 import shutil
 import ConfigParser
 from preprocess import (is_labeled, get_labeled_split, split_labeled_directory,
-                           put_labeled_at_end_of_path_if_not_there, remove_ds_store)
+                           put_labeled_at_end_of_path_if_not_there, remove_ds_store, add_pathsep)
 
 
 def create_dataset_spec(input_dir, output_dir, file_dict, cfg_parser, main_config_fpath, run_type):
     '''Writes dataset.spec file and returns number of image/label pairs referenced therein.
     N.B. this method will cause issues if any non-ROI filenames contain '_ROI.'
     will also cause issues if files aren't .tif'''
-    f = open(output_dir + '/dataset.spec', 'w+')
+    f = open(output_dir + 'dataset.spec', 'w+')
 
     # Build a list of absolute file paths, with index given by file_dict
     files = range(len(file_dict.keys()))
     for fname, value in file_dict.items():
         if value[1] == '':
-            files[value[0] - 1] = (input_dir + '/' + fname)
+            files[value[0] - 1] = (input_dir + fname)
         else:
-            files[value[0] - 1] = (input_dir + '/' + value[1] + '/' + fname)
+            files[value[0] - 1] = (input_dir + value[1] + os.sep + fname)
     # remove all filepaths with '_ROI.'
     files = [x for x in files if "_ROI." not in x]
     # remove .tif file extension
@@ -42,7 +42,7 @@ def create_dataset_spec(input_dir, output_dir, file_dict, cfg_parser, main_confi
         cfg_parser.add_section('fnames')
     for fname in files:
         print fname
-        section_num = file_dict[fname.split('/')[-1] + '.tif'][0]
+        section_num = file_dict[fname.split(os.sep)[-1] + '.tif'][0]
         s = write_one_section_dataset_spec(s, section_num, '' + fname + '.tif', fname + '_ROI.tif')
         # write section number (key) and fname (value) to config file
         cfg_parser.set('fnames', str(section_num), fname)
@@ -81,25 +81,28 @@ def dockerize_path(user_path):
     '''Rewrites user-provided path to point to mounted directory in Docker container
     Assumes ConvnetCellDetection directory is mounted in 'znn-release' directory in Docker container
     N.B. Assumes that no subfolders of ConvnetCellDetection are named 'ConvnetCellDetection' '''
-    s = user_path.split('ConvnetCellDetection')
-    new_path = '../ConvnetCellDetection' + s[1]
+    if '../' in user_path:
+        s = user_path.split('../')
+    else:
+        s = user_path.split('ConvnetCellDetection/')
+    new_path = '../ConvnetCellDetection/' + s[-1]
     return new_path
 
 
-def create_znn_config_file(output_dir, train_indices, val_indices, forward_indices, net_arch_fpath,
+def create_znn_config_file(output_dir, train_indices, val_indices, forward_indices, new_net_fpath,
                            train_net_prefix, train_patch_size, learning_rate, momentum, num_iter_per_save,
                            max_iter, forward_net, forward_outsz, num_file_pairs):
     # copy default_znn_config.cfg from src to output_dir
-    src_path = os.path.dirname(os.path.abspath(__file__))
-    znn_config_path = output_dir + '/znn_config.cfg'
-    shutil.copy(src_path + '/default_znn_config.cfg', znn_config_path)
+    src_path = add_pathsep(os.path.dirname(os.path.abspath(__file__)))
+    znn_config_path = output_dir + 'znn_config.cfg'
+    shutil.copy(src_path + 'default_znn_config.cfg', znn_config_path)
 
     # use configParser to modify fields in new config file
     znn_cfg_parser = ConfigParser.SafeConfigParser()
     znn_cfg_parser.readfp(open(znn_config_path, 'r'))
 
-    znn_cfg_parser.set('parameters', 'fnet_spec', dockerize_path(net_arch_fpath))
-    znn_cfg_parser.set('parameters', 'fdata_spec', dockerize_path(output_dir + '/dataset.spec'))
+    znn_cfg_parser.set('parameters', 'fnet_spec', dockerize_path(new_net_fpath))
+    znn_cfg_parser.set('parameters', 'fdata_spec', dockerize_path(output_dir + 'dataset.spec'))
     znn_cfg_parser.set('parameters', 'train_net_prefix', dockerize_path(train_net_prefix))
     znn_cfg_parser.set('parameters', 'train_range', train_indices)
     znn_cfg_parser.set('parameters', 'test_range', val_indices)
@@ -111,7 +114,7 @@ def create_znn_config_file(output_dir, train_indices, val_indices, forward_indic
     znn_cfg_parser.set('parameters', 'forward_range', forward_indices)  # autoset as everything in input_dir
     znn_cfg_parser.set('parameters', 'forward_net', dockerize_path(forward_net))
     znn_cfg_parser.set('parameters', 'forward_outsz', forward_outsz)  # TODO: calculate forward_outsz automatically, based on field of view
-    znn_cfg_parser.set('parameters', 'output_prefix', dockerize_path(output_dir) + '/')
+    znn_cfg_parser.set('parameters', 'output_prefix', dockerize_path(output_dir))
     with open(znn_config_path, 'wb') as configfile:
         znn_cfg_parser.write(configfile)
 
@@ -208,8 +211,8 @@ def get_io_dirs(run_type, cfg_parser):
     '''Gets input/output directories for either training data or forward pass'''
     if run_type != 'forward' and run_type != 'training':
         raise ValueError('run_type variable should be one of "forward" or "training"', run_type)
-    input_dir = cfg_parser.get(run_type, run_type + '_input_dir')
-    output_dir = cfg_parser.get(run_type, run_type + '_output_dir')
+    input_dir = add_pathsep(cfg_parser.get(run_type, run_type + '_input_dir'))
+    output_dir = add_pathsep(cfg_parser.get(run_type, run_type + '_output_dir'))
     return input_dir, output_dir
 
 
@@ -243,7 +246,7 @@ def main(main_config_fpath='../main_config_ar.cfg', run_type='forward'):
         os.makedirs(input_dir)
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
-    docker_dir = dockerize_path(output_dir)
+    #docker_dir = dockerize_path(output_dir)
 
     # Build file name dictionary
     if is_labeled(input_dir):
@@ -254,12 +257,12 @@ def main(main_config_fpath='../main_config_ar.cfg', run_type='forward'):
     train_indices, val_indices, forward_indices = get_train_val_forward_split_indices_as_str(file_dict)
 
     # Create znn files and save to output_dir
+    new_net_fpath = output_dir + net_arch_fpath.split(os.sep)[-1]
     num_file_pairs = create_dataset_spec(input_dir, output_dir, file_dict, cfg_parser, main_config_fpath, run_type)
-    create_znn_config_file(output_dir, train_indices, val_indices, forward_indices, net_arch_fpath,
+    create_znn_config_file(output_dir, train_indices, val_indices, forward_indices, new_net_fpath,
                            train_net_prefix, train_patch_size, learning_rate, momentum, num_iter_per_save,
                            max_iter, forward_net, forward_outsz, num_file_pairs)
 
-    new_net_fpath = output_dir + '/' + net_arch_fpath.split('/')[-1]
     copy_net_and_set_conv_filter_size(net_arch_fpath, new_net_fpath, filter_size)
     if is_squashing:
         set_network_3D_to_2D_squashing_filter_size(new_net_fpath, time_equalize)

@@ -13,7 +13,7 @@ import ConfigParser
 import os
 import signal
 from create_znn_files import dockerize_path
-from preprocess import remove_ds_store
+from preprocess import remove_ds_store, add_pathsep
 
 
 def start_docker_machine(memory):
@@ -36,13 +36,13 @@ def start_znn_container(dir_to_mount, container_name):
 def train_network(output_dir):
     output_dir = dockerize_path(output_dir)
     cmd = ''
-    cmd += '"cd opt/znn-release/python; sudo ldconfig; python train.py -c ' + output_dir + '/znn_config.cfg"'
+    cmd += '"cd opt/znn-release/python; sudo ldconfig; python train.py -c ' + output_dir + 'znn_config.cfg"'
     return cmd
 
 
 def forward_pass(output_dir):
     cmd = ''
-    cmd += '"cd opt/znn-release/python; sudo ldconfig; python forward.py -c ' + output_dir + '/znn_config.cfg"'
+    cmd += '"cd opt/znn-release/python; sudo ldconfig; python forward.py -c ' + output_dir + 'znn_config.cfg"'
     return cmd
 
 
@@ -71,8 +71,8 @@ def main(main_config_fpath='../main_config_ar.cfg', run_type='forward'):
     cfg_parser.readfp(open(main_config_fpath, 'r'))
     memory = cfg_parser.get('docker', 'memory')
     container_name = cfg_parser.get('docker', 'container_name')
-    training_output_dir = cfg_parser.get('training', 'training_output_dir')
-    forward_output_dir = cfg_parser.get('forward', 'forward_output_dir')
+    training_output_dir = add_pathsep(cfg_parser.get('training', 'training_output_dir'))
+    forward_output_dir = add_pathsep(cfg_parser.get('forward', 'forward_output_dir'))
 
     dir_to_mount = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Mounts ConvnetCellDetection directory
     print dir_to_mount
@@ -83,13 +83,14 @@ def main(main_config_fpath='../main_config_ar.cfg', run_type='forward'):
     cmd += start_znn_container(dir_to_mount, container_name)
 
     if run_type == 'training':
-        cmd += train_network(dockerize_path(training_output_dir)) + remove_znn_container(container_name)
+        cmd += train_network(training_output_dir) + remove_znn_container(container_name)
     elif run_type == 'forward':
-        cmd += forward_pass(dockerize_path(forward_output_dir)) + remove_znn_container(container_name)
+        cmd += forward_pass(forward_output_dir) + remove_znn_container(container_name)
     else:
         cmd += remove_znn_container(container_name)
         raise ValueError('run_type variable should be one of "forward" or "training"', run_type)
 
+    print cmd
     process = subprocess.Popen(cmd, shell=True)
     process.communicate()
 

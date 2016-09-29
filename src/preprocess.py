@@ -75,7 +75,7 @@ def add_pathsep(directory_name):
 
 def is_labeled(dir_path):
     '''Returns true if the argument path is to the special 'labeled' directory'''
-    return os.path.basename(os.path.dirname(dir_path)) == 'labeled'
+    return 'labeled' in os.path.basename(os.path.dirname(dir_path))
 
 
 def downsample_helper(files_list, img_width, img_height, mean_proj_bins, max_proj_bins):
@@ -156,7 +156,6 @@ def time_equalize(src_dir, dst_dir, img_width, img_height, new_time_depth):
         # time equalize indvidual videos
         elif ext == '.tif' or ext == '.tiff':
             data = load_stack(src_dir + f)
-            #resized = imresize(data, (new_time_depth, data.shape[1], data.shape[1]), interp='bicubic', mode='F')
             resized = zoom(data, (float(new_time_depth)/data.shape[0], 1, 1))
             tifffile.imsave(dst_dir + f, resized.squeeze())
 
