@@ -41,6 +41,7 @@ def train_network(output_dir):
 
 
 def forward_pass(output_dir):
+    output_dir = dockerize_path(output_dir)
     cmd = ''
     cmd += '"cd opt/znn-release/python; sudo ldconfig; python forward.py -c ' + output_dir + 'znn_config.cfg"'
     return cmd
