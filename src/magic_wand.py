@@ -2,6 +2,8 @@
 # 
 # Python implementation of the ImageJ Cell Magic Wand plugin
 # (http://www.maxplanckflorida.org/fitzpatricklab/software/cellMagicWand/)
+# with modifications to reduce variability due to seed point selection
+# and to support edge detection using all z slices of a 3D image
 #
 # Author: Noah Apthorpe (apthorpe@cs.princeton.edu)
 #
@@ -10,7 +12,8 @@
 #              using a polar transform and a dynamic
 #              programming edge-following algorithm
 #
-# Usage: Import and call the cell_magic_wand() function with
+# Usage: Import and call the cell_magic_wand() function
+#        or cell_magic_wand_3d () function with
 #        a source image, radius window, and location of center
 #        point.  Other parameters set as optional arguments.
 #        Returns a binary mask with 1s inside the detected edge and
@@ -21,8 +24,7 @@
 import numpy as np
 from scipy.ndimage.interpolation import zoom
 from scipy.ndimage.morphology import binary_fill_holes
-import matplotlib.pyplot as plt
-import tifffile
+
 
 def coord_polar_to_cart(r, theta, center):
     '''Converts polar coordinates around center to Cartesian'''
@@ -145,15 +147,15 @@ def find_edge_2d(polar, min_radius):
     mask = np.zeros(polar.shape)
     r_max, r = 0, 0
     for i,v in enumerate(values[:,0]):
-        print i, v
         if v >= r_max:
             r, r_max = i, v
-    print r
     #r = np.argmax(values[:, 0])
     edge.append((r+min_radius, 0))
     mask[0:r+1, 0] = 1
     for t in range(1,polar.shape[1]):
         r += directions[r, t-1]
+        if r >= directions.shape[0]: r = directions.shape[0]-1
+        if r < 0: r = 0
         edge.append((r+min_radius, t))
         mask[0:r+1, t] = 1
 
@@ -173,7 +175,7 @@ def edge_polar_to_cart(edge, center):
     return cart_edge
 
 
-def cell_magic_wand(image, center, min_radius, max_radius, phase_width=512, zoom_factor=1):
+def cell_magic_wand_single_point(image, center, min_radius, max_radius, phase_width=512, zoom_factor=1):
     '''Draws a border within a specified radius around a specified center "seed" point
     using a polar transform and a dynamic programming edge-following algorithm.
 
@@ -186,136 +188,37 @@ def cell_magic_wand(image, center, min_radius, max_radius, phase_width=512, zoom
     cart_mask = mask_polar_to_cart(polar_mask, center, min_radius, max_radius,
                                    image.shape, zoom_factor=zoom_factor)
     return cart_mask, cart_edge
+
+
+def cell_magic_wand(image, center, min_radius, max_radius, phase_width=512, zoom_factor=1):
+    '''Runs the cell magic wand tool on multiple points near the supplied center and 
+    combines the results for a more robust edge detection then provided by the vanilla wand tool.
+
+    Returns a binary mask with 1s inside detected edge'''
     
+    centers = []
+    for i in [-1,0,1]:
+        for j in [-1,0,1]:
+            centers.append((center[0]+i, center[1]+j))
+    masks = np.zeros((image.shape[0], image.shape[1], len(centers)))
+    for i, c in enumerate(centers):
+        mask, edge = cell_magic_wand_single_point(image, c, min_radius, max_radius,
+                                                  phase_width=phase_width, zoom_factor=zoom_factor)
+        masks[:,:,i] = mask
+    mean_mask = np.mean(masks, axis=2)
+    final_mask = (mean_mask > 0.5).astype(int)
+    return final_mask
 
-##############################################################
-# Testing Code
-##############################################################
 
-def _test1_cell_magic_wand():
-    image_shape = (50, 50)
-    image = np.zeros(image_shape)
-    r = 15
-    center = (25,25)
-    min_radius = 5
-    max_radius = 20
-    zoom_factor = 1
-    phase_width = 512
-
-    for i in range(image_shape[0]):
-        for j in range(image_shape[0]):
-            if (i-center[0])**2 + (j-center[1])**2 <= r**2:
-                image[i, j] = np.mean([np.abs(i-center[0])+1, np.abs(j-center[1])+1])
-    plt.figure()
-    plt.imshow(image, cmap='gray')
-    print image
-    print
-
-    polar_image = image_cart_to_polar(image, center, min_radius, max_radius,
-                                      phase_width=phase_width, zoom_factor=zoom_factor)
-    print "polar image:"
-    print polar_image
-    print
-
-    polar_edge, polar_mask = find_edge_2d(polar_image, min_radius)
-    print "polar mask:"
-    print polar_mask
-    print
-
-    cart_edge = edge_polar_to_cart(polar_edge, center)
-    cart_mask = mask_polar_to_cart(polar_mask, center, min_radius, max_radius,
-                                   image.shape, zoom_factor=zoom_factor)
-    print "cart mask:"
-    print cart_mask
-
-    print "cart edge:"
-    print cart_edge
-
-    edge_image = np.zeros((image_shape[0], image_shape[1], 3))
-    edge_image[:,:,1] = image
-    for x in range(image.shape[0]):
-        for y in range(image.shape[1]):
-            if (x,y) in cart_edge:
-                edge_image[x,y,2] = 1
-                
-
-    plt.figure()
-    plt.imshow(cart_mask, cmap='gray')
-
-    plt.figure()
-    overlay = np.zeros((image_shape[0], image_shape[1], 3))
-    overlay[:,:,0] = image
-    overlay[:,:,2] = cart_mask
-    plt.imshow(overlay)
-
-    plt.figure()
-    plt.imshow(edge_image)
-    plt.show()
-
-def _test2_cell_magic_wand():
-    test_image = tifffile.imread('AMG1_exp1_new_001.tif')[0,:,:]
-    print test_image.shape
-#    plt.figure()
-#    plt.imshow(test_image, cmap='gray')
-
-    overlay = np.zeros((test_image.shape[0], test_image.shape[1], 3))
-    overlay[:,:,0] = test_image
-    overlay[:,:,1] = test_image
-    centers = [(188,138), (303,221), (188, 380)]
-    min_radius = 6
-    max_radius = 11
-    for c in centers:
-        mask, edge = cell_magic_wand(test_image, c, min_radius, max_radius)
-        overlay[:,:,2] += mask
-    plt.figure()
-    plt.imshow(overlay)
-    
-    plt.show()
-#    image_shape = (512, 512)
-#    image = np.zeros(image_shape)
-#    for i in range(image_shape[0]):
-#        for j in range(image_shape[0]):
-#            if (i-25)**2 + (j-25)**2 <= r**2:
-#                image[i, j] = 1
-#    plt.imshow(image, cmap='gray')
-#    mask, edge = cell_magic_wand(image, (25,25), 10, 20)
-#    plt.imshow(mask, cmap='gray')
-
-                
-
-# run as main to test
-if __name__ == "__main__":
-    _test1_cell_magic_wand()
-    _test2_cell_magic_wand()
-    
-    
-    
-    '''
-    a = np.arange(49).reshape((7,7))
-    print a
-    print
-    b = image_cart_to_polar(a, (3,3), 0, 3, 20, zoom_factor=2)
-    print b
-    print
-    c = mask_polar_to_cart(b, (3,3), 0, 3, (10,10), zoom_factor=2)
-    sys.exit()
-    #print a
-    #print
-    #print b
-
-    a = np.array([[0,0,0,0,0,0,0],
-         [0,0,0,1,0,0,0],
-         [0,0,1,1,1,0,0],
-         [0,1,1,1,1,1,0],
-         [0,0,1,1,1,0,0],
-         [0,0,0,1,0,0,0],
-         [0,0,0,0,0,0,0]])
-    print a
-    print
-    b = image_cart_to_polar(a, (3,3), 0, 3, 10, zoom_factor=1)
-    print b
-    print
-    edge, mask = find_edge_2d(b)
-    r, theta = edge[:,0], edge[:,1]
-    print coord_polar_to_cart(r, theta, (3,3))
-    '''
+def cell_magic_wand_3d(image_3d, center, min_radius, max_radius, phase_width=512, zoom_factor=1):
+    '''Robust cell magic wand tool for 3D images with dimensions (z, x, y) - default for tifffile.load.
+    This functions runs the robust wand tool on each z slice in the image and returns the mean mask
+    thresholded to 0.5'''
+    masks = np.zeros(image_3d.shape)
+    for s in range(image_3d.shape[0]):
+        mask = cell_magic_wand(image_3d[s,:,:], center, min_radius, max_radius,
+                               phase_width=phase_width, zoom_factor=1)
+        masks[s,:,:] = mask
+    mean_mask = np.mean(masks, axis=0)
+    final_mask = (mean_mask > 0.5).astype(int)
+    return final_mask
