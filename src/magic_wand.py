@@ -1,127 +1,304 @@
+###########################################################################
+# 
+# Python implementation of the ImageJ Cell Magic Wand plugin
+# (http://www.maxplanckflorida.org/fitzpatricklab/software/cellMagicWand/)
+#
+# Author: Noah Apthorpe (apthorpe@cs.princeton.edu)
+#
+# Description: Draws a border within a specified radius
+#              around a specified center "seed" point
+#              using a polar transform and a dynamic
+#              programming edge-following algorithm
+#
+# Usage: Import and call the cell_magic_wand() function with
+#        a source image, radius window, and location of center
+#        point.  Other parameters set as optional arguments.
+#        Returns a binary mask with 1s inside the detected edge and
+#        a list of points along the detected edge.
+#
+###########################################################################
+
 import numpy as np
 from scipy.ndimage.interpolation import zoom
-import sys
+from scipy.ndimage.morphology import binary_fill_holes
+import matplotlib.pyplot as plt
+import tifffile
 
 def coord_polar_to_cart(r, theta, center):
-    '''Converts polar coordinates around center to cartesian'''
+    '''Converts polar coordinates around center to Cartesian'''
     x = r * np.cos(theta) + center[0]
     y = r * np.sin(theta) + center[1]
     return x, y
 
 
-#def coord_cart_to_polar(x, y, center):
-#    r = np.sqrt((x-center[0])**2, (y-center[1])**2)
-#    theta = np.arctan2((y-center[1]), (x-center[0]))
-#    return r, theta
+def coord_cart_to_polar(x, y, center):
+    '''Converts Cartesian coordinates to polar'''
+    r = np.sqrt((x-center[0])**2 + (y-center[1])**2)
+    theta = np.arctan2((y-center[1]), (x-center[0]))
+    return r, theta
 
 
-def image_cart_to_polar(image, center, initial_radius, final_radius, phase_width, zoom_factor=1):
+def image_cart_to_polar(image, center, min_radius, max_radius, phase_width, zoom_factor=1):
     '''Converts an image from cartesian to polar coordinates around center'''
-    # ToDo: prevent error if radius goes over edge from center
-    image = zoom(image, (zoom_factor, zoom_factor), order=4)
-    center = (center[0]*zoom_factor + zoom_factor/2, center[1]*zoom_factor + zoom_factor/2)
-    initial_radius = initial_radius * zoom_factor
-    final_radius = final_radius * zoom_factor
-    
-    theta, r = np.meshgrid(np.linspace(0, 2*np.pi, phase_width),
-                           np.arange(initial_radius, final_radius))
 
+    # Upsample image
+    if zoom_factor != 1:
+        if len(image.shape) == 3:
+            image = zoom(image, (zoom_factor, zoom_factor, 1), order=4)
+        else:
+            image = zoom(image, (zoom_factor, zoom_factor), order=4)
+        center = (center[0]*zoom_factor + zoom_factor/2, center[1]*zoom_factor + zoom_factor/2)
+        min_radius = min_radius * zoom_factor
+        max_radius = max_radius * zoom_factor
+    
+    # pad if necessary
+    max_x, max_y = image.shape[0], image.shape[1]
+    pad_dist_x = np.max([(center[0] + max_radius) - max_x, -(center[0] - max_radius)])
+    pad_dist_y = np.max([(center[1] + max_radius) - max_y, -(center[1] - max_radius)])
+    pad_dist = np.max([0, pad_dist_x, pad_dist_y])
+    if pad_dist != 0:
+        image = np.pad(image, pad_dist, 'constant')
+
+    # coordinate conversion
+    theta, r = np.meshgrid(np.linspace(0, 2*np.pi, phase_width),
+                           np.arange(min_radius, max_radius))
     x, y = coord_polar_to_cart(r, theta, center)
     x, y = np.round(x), np.round(y)
     x, y = x.astype(int), y.astype(int)
     
     if len(image.shape) == 3:
         polar = image[x, y, :]
-        polar.reshape((final_radius - initial_radius, phase_width, -1))
+        polar.reshape((max_radius - min_radius, phase_width, -1))
     else:
         polar = image[x, y]
-        polar.reshape((final_radius - initial_radius, phase_width))
+        polar.reshape((max_radius - min_radius, phase_width))
 
     return polar
 
 
-def find_edge_2d(polar):
+def mask_polar_to_cart(mask, center, min_radius, max_radius, output_shape, zoom_factor=1):
+    '''Converts a polar binary mask to Cartesian and places in an image of zeros'''
+
+    # Account for upsampling 
+    if zoom_factor != 1:
+        center = (center[0]*zoom_factor + zoom_factor/2, center[1]*zoom_factor + zoom_factor/2)
+        min_radius = min_radius * zoom_factor
+        max_radius = max_radius * zoom_factor
+        output_shape = map(lambda a: a * zoom_factor, output_shape)
+
+    # new image
+    image = np.zeros(output_shape)
+
+    # coordinate conversion
+    theta, r = np.meshgrid(np.linspace(0, 2*np.pi, mask.shape[1]),
+                           np.arange(0, max_radius))
+    x, y = coord_polar_to_cart(r, theta, center)
+    x, y = np.round(x), np.round(y)
+    x, y = x.astype(int), y.astype(int)
+    
+    for i in range(theta.shape[0]):
+        for j in range(theta.shape[1]):
+            xx, yy = np.max([0, x[i,j]]), np.max([0, y[i,j]])
+            xx, yy = np.min([xx, image.shape[0]]), np.min([yy, image.shape[0]])
+            if len(image.shape) == 3:
+                image[xx, yy, :] = mask[i,j]
+            else:
+                image[xx, yy] = mask[i,j]
+
+    # downsample image
+    if zoom_factor != 1:
+        zf = 1/float(zoom_factor)
+        if len(image.shape) == 3:
+            image = zoom(image, (zf, zf, 1), order=4)
+        else:
+            image = zoom(image, (zf, zf), order=4)
+
+    # ensure image remains a filled binary mask
+    image = (image > 0.5).astype(int)
+    image = binary_fill_holes(image)
+    return image
+    
+
+def find_edge_2d(polar, min_radius):
+    '''Dynamic programming algorithm to find edge given polar image'''
     if len(polar.shape) != 2:
         raise ValueError("argument to find_edge_2d must be 2D")
 
-    values_right_shift = np.pad(polar, ((0,0),(0,1)), 'constant', constant_values=0)[:,1:]
-    values_closeright_shift = np.pad(polar, ((1,0),(0,1)), 'constant', constant_values=0)[:-1,1:]
-    values_awayright_shift = np.pad(polar, ((0,1),(0,1)), 'constant', constant_values=0)[1:,1:]
+    # Dynamic programming phase
+    values_right_shift = np.pad(polar, ((0, 0), (0, 1)), 'constant', constant_values=0)[:, 1:]
+    values_closeright_shift = np.pad(polar, ((1, 0),(0, 1)), 'constant', constant_values=0)[:-1, 1:]
+    values_awayright_shift = np.pad(polar, ((0, 1), (0, 1)), 'constant', constant_values=0)[1:, 1:]
 
     values_move = np.zeros((polar.shape[0], polar.shape[1], 3))
-    values_move[:,:,0] = np.add(polar, values_closeright_shift)  # closeright
-    values_move[:,:,1] = np.add(polar, values_right_shift)  # right
-    values_move[:,:,2] = np.add(polar, values_awayright_shift)  # awayright
+    values_move[:, :, 2] = np.add(polar, values_closeright_shift)  # closeright
+    values_move[:, :, 1] = np.add(polar, values_right_shift)  # right
+    values_move[:, :, 0] = np.add(polar, values_awayright_shift)  # awayright
     values = np.amax(values_move, axis=2)
 
     directions = np.argmax(values_move, axis=2)
     directions = np.subtract(directions, 1)
+    directions = np.negative(directions)
+    #directions[directions == 2] = -1
     
+    # Edge following phase
     edge = []
     mask = np.zeros(polar.shape)
-    r = np.argmax(values[:,0])
-    edge.append((r, 0))
-    mask[0:r,0] = 1
+    r_max, r = 0, 0
+    for i,v in enumerate(values[:,0]):
+        print i, v
+        if v >= r_max:
+            r, r_max = i, v
+    print r
+    #r = np.argmax(values[:, 0])
+    edge.append((r+min_radius, 0))
+    mask[0:r+1, 0] = 1
     for t in range(1,polar.shape[1]):
-        r += directions[r,t-1]
-        edge.append((r,t))
-        mask[0:r,t] = 1
+        r += directions[r, t-1]
+        edge.append((r+min_radius, t))
+        mask[0:r+1, t] = 1
 
-    print values
+    # add to inside of mask accounting for min_radius
+    new_mask = np.ones((min_radius+mask.shape[0], mask.shape[1]))
+    new_mask[min_radius:, :] = mask
+    
+    return np.array(edge), new_mask
+
+
+def edge_polar_to_cart(edge, center):
+    '''Converts a list of polar edge points to a list of cartesian edge points'''
+    cart_edge = [] 
+    for (r,t) in edge:
+        x, y = coord_polar_to_cart(r, t, center)
+        cart_edge.append((round(x), round(y)))
+    return cart_edge
+
+
+def cell_magic_wand(image, center, min_radius, max_radius, phase_width=512, zoom_factor=1):
+    '''Draws a border within a specified radius around a specified center "seed" point
+    using a polar transform and a dynamic programming edge-following algorithm.
+
+    Returns a binary mask with 1s inside the detected edge and
+    a list of points along the detected edge.'''
+    polar_image = image_cart_to_polar(image, center, min_radius, max_radius,
+                                      phase_width=phase_width, zoom_factor=zoom_factor)
+    polar_edge, polar_mask = find_edge_2d(polar_image, min_radius)
+    cart_edge = edge_polar_to_cart(polar_edge, center)
+    cart_mask = mask_polar_to_cart(polar_mask, center, min_radius, max_radius,
+                                   image.shape, zoom_factor=zoom_factor)
+    return cart_mask, cart_edge
+    
+
+##############################################################
+# Testing Code
+##############################################################
+
+def _test1_cell_magic_wand():
+    image_shape = (50, 50)
+    image = np.zeros(image_shape)
+    r = 15
+    center = (25,25)
+    min_radius = 5
+    max_radius = 20
+    zoom_factor = 1
+    phase_width = 512
+
+    for i in range(image_shape[0]):
+        for j in range(image_shape[0]):
+            if (i-center[0])**2 + (j-center[1])**2 <= r**2:
+                image[i, j] = np.mean([np.abs(i-center[0])+1, np.abs(j-center[1])+1])
+    plt.figure()
+    plt.imshow(image, cmap='gray')
+    print image
     print
-    print directions
+
+    polar_image = image_cart_to_polar(image, center, min_radius, max_radius,
+                                      phase_width=phase_width, zoom_factor=zoom_factor)
+    print "polar image:"
+    print polar_image
     print
-    print np.array(edge)
+
+    polar_edge, polar_mask = find_edge_2d(polar_image, min_radius)
+    print "polar mask:"
+    print polar_mask
     print
-    print mask
-    return np.array(edge), mask
 
+    cart_edge = edge_polar_to_cart(polar_edge, center)
+    cart_mask = mask_polar_to_cart(polar_mask, center, min_radius, max_radius,
+                                   image.shape, zoom_factor=zoom_factor)
+    print "cart mask:"
+    print cart_mask
 
-def mask_polar_to_cart(mask, center, phase_width, zoom_factor=1):
-    pass
+    print "cart edge:"
+    print cart_edge
 
+    edge_image = np.zeros((image_shape[0], image_shape[1], 3))
+    edge_image[:,:,1] = image
+    for x in range(image.shape[0]):
+        for y in range(image.shape[1]):
+            if (x,y) in cart_edge:
+                edge_image[x,y,2] = 1
+                
 
-def meanAngle(t1, t2):
-    max_t = np.max((t1, t2))
-    min_t = np.min((t1, t2))
-    if np.abs(t1-t2)) > np.pi:
-        max_t -= np.pi*2
-    return ((max_t + min_t) / float(2)) % (np.pi*2)
+    plt.figure()
+    plt.imshow(cart_mask, cmap='gray')
 
-def make_connected_edge(polar_edge, center):
-    connected_edge = []
-    for i in range(len(polar_edge)):
-        j = (i+1) % len(polar_edge)
-        pi, pj = polar_edge[i], polar_edge[j]
-        ci = coord_polar_to_cart(pi[0], pi[1], center)
-        cj = coord_polar_to_cart(pj[0], pj[1], center)
-        connected_edge.append(ci)
-        
-        while np.abs(ci[0]-cj[0]) + np.abs(ci[1]-cj[1]) != 1:
-            mean_r = (pi[0] + pj[0]) / float(2)
-            mean_theta = meanAngle(pi[1], pj[1])
-            mean_x, mean_y = coord_polar_to_cart(mean_r, mean_theta, center)
-            need_diag = (mean_x, mean_y) == ci and np.abs(mean_x-cj[0]) + np.abs(mean_y-cj[1]) == 1
-            need_diag = need_diag or ((mean_x, mean_y) == cj and np.abs(mean_x-ci[0]) + np.abs(mean_y-ci[1]) == 1)
-            if need_diag:
-                if mean_theta < np.pi/2:
-                    mean_x -= 1
-                elif mean_theta < np.pi:
-                    mean_y -= 1
-                elif mean_theta < np.pi*3/2:
-                    mean_x += 1
-                else:
-                    mean_y += 1
-            # TODO ensure mean_x mean_y aren't outside the image
-            ci = (mean_x, mean_y)
-            connected_edge.append(ci)
-        
-    return connected_edge
+    plt.figure()
+    overlay = np.zeros((image_shape[0], image_shape[1], 3))
+    overlay[:,:,0] = image
+    overlay[:,:,2] = cart_mask
+    plt.imshow(overlay)
 
+    plt.figure()
+    plt.imshow(edge_image)
+    plt.show()
 
+def _test2_cell_magic_wand():
+    test_image = tifffile.imread('AMG1_exp1_new_001.tif')[0,:,:]
+    print test_image.shape
+#    plt.figure()
+#    plt.imshow(test_image, cmap='gray')
+
+    overlay = np.zeros((test_image.shape[0], test_image.shape[1], 3))
+    overlay[:,:,0] = test_image
+    overlay[:,:,1] = test_image
+    centers = [(188,138), (303,221), (188, 380)]
+    min_radius = 6
+    max_radius = 11
+    for c in centers:
+        mask, edge = cell_magic_wand(test_image, c, min_radius, max_radius)
+        overlay[:,:,2] += mask
+    plt.figure()
+    plt.imshow(overlay)
+    
+    plt.show()
+#    image_shape = (512, 512)
+#    image = np.zeros(image_shape)
+#    for i in range(image_shape[0]):
+#        for j in range(image_shape[0]):
+#            if (i-25)**2 + (j-25)**2 <= r**2:
+#                image[i, j] = 1
+#    plt.imshow(image, cmap='gray')
+#    mask, edge = cell_magic_wand(image, (25,25), 10, 20)
+#    plt.imshow(mask, cmap='gray')
+
+                
+
+# run as main to test
 if __name__ == "__main__":
+    _test1_cell_magic_wand()
+    _test2_cell_magic_wand()
+    
+    
+    
+    '''
     a = np.arange(49).reshape((7,7))
-    b = image_cart_to_polar(a, (3,3), 0, 3, 20, zoom_factor=1)
+    print a
+    print
+    b = image_cart_to_polar(a, (3,3), 0, 3, 20, zoom_factor=2)
+    print b
+    print
+    c = mask_polar_to_cart(b, (3,3), 0, 3, (10,10), zoom_factor=2)
+    sys.exit()
     #print a
     #print
     #print b
@@ -141,3 +318,4 @@ if __name__ == "__main__":
     edge, mask = find_edge_2d(b)
     r, theta = edge[:,0], edge[:,1]
     print coord_polar_to_cart(r, theta, (3,3))
+    '''
