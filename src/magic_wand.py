@@ -190,15 +190,16 @@ def cell_magic_wand_single_point(image, center, min_radius, max_radius, phase_wi
     return cart_mask, cart_edge
 
 
-def cell_magic_wand(image, center, min_radius, max_radius, phase_width=512, zoom_factor=1):
+def cell_magic_wand(image, center, min_radius, max_radius,
+                    phase_width=512, zoom_factor=1, center_range=2):
     '''Runs the cell magic wand tool on multiple points near the supplied center and 
     combines the results for a more robust edge detection then provided by the vanilla wand tool.
 
     Returns a binary mask with 1s inside detected edge'''
     
     centers = []
-    for i in [-1,0,1]:
-        for j in [-1,0,1]:
+    for i in [-center_range, 0, center_range]:
+        for j in [-center_range, 0, center_range]:
             centers.append((center[0]+i, center[1]+j))
     masks = np.zeros((image.shape[0], image.shape[1], len(centers)))
     for i, c in enumerate(centers):
@@ -210,14 +211,16 @@ def cell_magic_wand(image, center, min_radius, max_radius, phase_width=512, zoom
     return final_mask
 
 
-def cell_magic_wand_3d(image_3d, center, min_radius, max_radius, phase_width=512, zoom_factor=1):
+def cell_magic_wand_3d(image_3d, center, min_radius, max_radius,
+                       phase_width=512, zoom_factor=1, center_range=2):
     '''Robust cell magic wand tool for 3D images with dimensions (z, x, y) - default for tifffile.load.
     This functions runs the robust wand tool on each z slice in the image and returns the mean mask
     thresholded to 0.5'''
     masks = np.zeros(image_3d.shape)
     for s in range(image_3d.shape[0]):
         mask = cell_magic_wand(image_3d[s,:,:], center, min_radius, max_radius,
-                               phase_width=phase_width, zoom_factor=1)
+                               phase_width=phase_width, zoom_factor=zoom_factor,
+                               center_range=center_range)
         masks[s,:,:] = mask
     mean_mask = np.mean(masks, axis=0)
     final_mask = (mean_mask > 0.5).astype(int)
