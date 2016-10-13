@@ -45,10 +45,7 @@ def image_cart_to_polar(image, center, min_radius, max_radius, phase_width, zoom
 
     # Upsample image
     if zoom_factor != 1:
-        if len(image.shape) == 3:
-            image = zoom(image, (zoom_factor, zoom_factor, 1), order=4)
-        else:
-            image = zoom(image, (zoom_factor, zoom_factor), order=4)
+        image = zoom(image, (zoom_factor, zoom_factor), order=4)
         center = (center[0]*zoom_factor + zoom_factor/2, center[1]*zoom_factor + zoom_factor/2)
         min_radius = min_radius * zoom_factor
         max_radius = max_radius * zoom_factor
@@ -68,12 +65,8 @@ def image_cart_to_polar(image, center, min_radius, max_radius, phase_width, zoom
     x, y = np.round(x), np.round(y)
     x, y = x.astype(int), y.astype(int)
     
-    if len(image.shape) == 3:
-        polar = image[x, y, :]
-        polar.reshape((max_radius - min_radius, phase_width, -1))
-    else:
-        polar = image[x, y]
-        polar.reshape((max_radius - min_radius, phase_width))
+    polar = image[x, y]
+    polar.reshape((max_radius - min_radius, phase_width))
 
     return polar
 
@@ -110,10 +103,7 @@ def mask_polar_to_cart(mask, center, min_radius, max_radius, output_shape, zoom_
     # downsample image
     if zoom_factor != 1:
         zf = 1/float(zoom_factor)
-        if len(image.shape) == 3:
-            image = zoom(image, (zf, zf, 1), order=4)
-        else:
-            image = zoom(image, (zf, zf), order=4)
+        image = zoom(image, (zf, zf), order=4)
 
     # ensure image remains a filled binary mask
     image = (image > 0.5).astype(int)
@@ -140,8 +130,7 @@ def find_edge_2d(polar, min_radius):
     directions = np.argmax(values_move, axis=2)
     directions = np.subtract(directions, 1)
     directions = np.negative(directions)
-    #directions[directions == 2] = -1
-    
+        
     # Edge following phase
     edge = []
     mask = np.zeros(polar.shape)
@@ -149,7 +138,6 @@ def find_edge_2d(polar, min_radius):
     for i,v in enumerate(values[:,0]):
         if v >= r_max:
             r, r_max = i, v
-    #r = np.argmax(values[:, 0])
     edge.append((r+min_radius, 0))
     mask[0:r+1, 0] = 1
     for t in range(1,polar.shape[1]):
