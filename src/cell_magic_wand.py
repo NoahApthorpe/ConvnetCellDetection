@@ -172,6 +172,16 @@ def cell_magic_wand_single_point(image, center, min_radius, max_radius,
     a list of points along the detected edge.'''
     if roughness < 1:
         roughness = 1
+        print "roughness must be >= 1, setting roughness to 1"
+    if min_radius < 0:
+        min_radius = 0
+        print "min_radius must be >=0, setting min_radius to 0"
+    if max_radius <= min_radius:
+        max_radius = min_radius + 1
+        print "max_radius must be larger than min_radius, setting max_radius to " + str(max_radius)
+    if zoom_factor <= 0:
+        zoom_factor = 1
+        print "negative zoom_factor not allowed, setting zoom_factor to 1"
     phase_width = int(2 * np.pi * max_radius * roughness)
     polar_image = image_cart_to_polar(image, center, min_radius, max_radius,
                                       phase_width=phase_width, zoom_factor=zoom_factor)
@@ -204,13 +214,13 @@ def cell_magic_wand(image, center, min_radius, max_radius,
 
 
 def cell_magic_wand_3d(image_3d, center, min_radius, max_radius,
-                       roughness=2, zoom_factor=1, center_range=2):
+                       roughness=2, zoom_factor=1, center_range=2, z_step=1):
     '''Robust cell magic wand tool for 3D images with dimensions (z, x, y) - default for tifffile.load.
     This functions runs the robust wand tool on each z slice in the image and returns the mean mask
     thresholded to 0.5'''
-    masks = np.zeros(image_3d.shape)
-    for s in range(image_3d.shape[0]):
-        mask = cell_magic_wand(image_3d[s,:,:], center, min_radius, max_radius,
+    masks = np.zeros((int(image_3d.shape[0]/z_step), image_3d.shape[1], image_3d.shape[2]))
+    for s in range(int(image_3d.shape[0]/z_step)):
+        mask = cell_magic_wand(image_3d[s*z_step,:,:], center, min_radius, max_radius,
                                roughness=roughness, zoom_factor=zoom_factor,
                                center_range=center_range)
         masks[s,:,:] = mask
