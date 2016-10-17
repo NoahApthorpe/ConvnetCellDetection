@@ -54,7 +54,7 @@ def image_cart_to_polar(image, center, min_radius, max_radius, phase_width, zoom
     max_x, max_y = image.shape[0], image.shape[1]
     pad_dist_x = np.max([(center[0] + max_radius) - max_x, -(center[0] - max_radius)])
     pad_dist_y = np.max([(center[1] + max_radius) - max_y, -(center[1] - max_radius)])
-    pad_dist = np.max([0, pad_dist_x, pad_dist_y])
+    pad_dist = int(np.max([0, pad_dist_x, pad_dist_y]))
     if pad_dist != 0:
         image = np.pad(image, pad_dist, 'constant')
 
@@ -94,11 +94,8 @@ def mask_polar_to_cart(mask, center, min_radius, max_radius, output_shape, zoom_
     for i in range(theta.shape[0]):
         for j in range(theta.shape[1]):
             xx, yy = np.max([0, x[i,j]]), np.max([0, y[i,j]])
-            xx, yy = np.min([xx, image.shape[0]]), np.min([yy, image.shape[0]])
-            if len(image.shape) == 3:
-                image[xx, yy, :] = mask[i,j]
-            else:
-                image[xx, yy] = mask[i,j]
+            xx, yy = np.min([xx, image.shape[0]-1]), np.min([yy, image.shape[0]-1])
+            image[xx, yy] = mask[i,j]
 
     # downsample image
     if zoom_factor != 1:

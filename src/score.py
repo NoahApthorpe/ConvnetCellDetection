@@ -25,7 +25,7 @@ import os
 from collections import defaultdict
 import os.path
 import load
-from preprocess import is_labeled
+from preprocess import is_labeled, add_pathsep
 import ConfigParser
 
 class Score:
@@ -242,12 +242,12 @@ def main(main_config_fpath='../main_config_ar.cfg'):
     cfg_parser.readfp(open(main_config_fpath,'r'))
     
     # read parameters
-    postprocess_dir = cfg_parser.get('general', 'postprocess_dir')
-    data_dir = cfg_parser.get('general', 'data_dir')
+    data_dir = add_pathsep(cfg_parser.get('general', 'data_dir'))
+    postprocess_dir = data_dir[0:-1] + "_postprocessed" + os.sep
     img_width = cfg_parser.getint('general', 'img_width')
     img_height = cfg_parser.getint('general', 'img_height')
-    # if not is_labeled(data_dir) or not is_labeled(postprocess_dir): #we haven't been putting test/train/val into a "labeled" folder
-                                                                      #Let's discuss if we should. -AR 09/13/16
+    # if not is_labeled(data_dir) or not is_labeled(postprocess_dir): #we haven't been putting test/train/val into a "labeled" folder #Let's discuss if we should. -AR 09/13/16
+
     if not is_labeled(data_dir):
         print "original data_dir was not called 'labeled'. Aborting scoring."
         return

@@ -185,15 +185,20 @@ def split_labeled_directory(split_dict, dir_to_split, is_ROI_tif, is_post_proces
     '''Moves files from dir_to_split into newly created train, test,
     and validation subdirectories in dir_to_split based on split_dict dictionary.
     is_ROI_tif should be true when ROI labels in directory are tif files, not zip files'''
-    if dir_to_split[-1] != '/':
-        dir_to_split += '/'
-
+    dir_to_split = add_pathsep(dir_to_split)
+            
     for subdir in split_dict.itervalues():
         subdir_path = dir_to_split + subdir
         if not os.path.exists(subdir_path):
             os.makedirs(subdir_path)
 
     for fname, subdir in split_dict.items():
+        for f in os.listdir(dir_to_split):
+            if not os.path.isfile(dir_to_split + f): continue
+            base = os.path.splitext(fname)[0]
+            if base in f:
+                os.rename(dir_to_split + f, dir_to_split + subdir + os.sep + f)
+    '''
         if is_post_process and ".zip" in fname:
             continue
         if is_ROI_tif:
@@ -206,7 +211,7 @@ def split_labeled_directory(split_dict, dir_to_split, is_ROI_tif, is_post_proces
                 os.rename(dir_to_split + fname, dir_to_split + subdir + '/' + fname)
         except AssertionError:
             print fname, ' was not found in ', dir_to_split, ' while attempting to maintain training/test/validation split'
-
+    '''
 
 def put_labeled_at_end_of_path_if_not_there(fpath):
     if fpath[-1] == '/':

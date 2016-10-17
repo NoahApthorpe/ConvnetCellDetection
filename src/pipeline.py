@@ -13,8 +13,8 @@
 #           * complete (run entire pipeline)
 #           * preprocess
 #           * train
-#           * postprocess
 #           * forward
+#           * postprocess
 #           * score
 #
 ##############################################################
@@ -78,6 +78,9 @@ def score_labeled_data(main_config_fpath):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print "Usage: python " + sys.argv[0] + " <pipeline step> <config filepath>"
+        sys.exit()
     cmd = sys.argv[1]
     param = sys.argv[2]
     run_dict = {'complete': complete_pipeline,
