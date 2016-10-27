@@ -334,7 +334,7 @@ def main(main_config_fpath='../main_config_ar.cfg'):
             r = roi.max(axis=0)
             roi_name = postprocess_dir + ttv + filenames[i] + '.tif'
             tifffile.imsave(roi_name, r.astype(np.float32))
-            np.savez_compressed(postprocess_dir + ttv + filenames[i] + '.npz', roi, final_roi_probs[i])
+            np.savez_compressed(postprocess_dir + ttv + filenames[i] + '.npz', rois=roi, roi_probabilities=final_roi_probs[i])
             
     '''
     # Impose test/train/validation split on postprocess directory if applicable 
