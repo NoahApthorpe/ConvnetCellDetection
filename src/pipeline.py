@@ -20,6 +20,7 @@
 ##############################################################
 
 import sys
+import ConfigParser
 import create_experiment_dir
 import preprocess
 import create_znn_files
@@ -28,13 +29,26 @@ import postprocess
 import score
 
 
+def is_training(main_config_fpath):
+    '''check if complete pipeline should include training and scoring''' 
+    with open(main_config_fpath, 'r') as config_file:
+        cfg_parser = ConfigParser.SafeConfigParser()
+        cfg_parser.readfp(config_file)
+        data_dir = cfg_parser.get('general', 'data_dir')
+        if preprocess.is_labeled(data_dir):
+            return True
+        return False
+
+
 def complete_pipeline(main_config_fpath):
-    '''Run entire pipeline'''
+    '''Run entire pipeline'''        
     preprocessing(main_config_fpath)
-    train(main_config_fpath)
+    if is_training(main_config_fpath):
+        train(main_config_fpath)
     forward_pass(main_config_fpath)
     postprocessing(main_config_fpath)
-    score_labeled_data(main_config_fpath)
+    if is_training(main_config_fpath):
+        score_labeled_data(main_config_fpath)
 
 
 def create_expt_dir(experiment_name):

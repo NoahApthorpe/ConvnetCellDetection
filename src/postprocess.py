@@ -158,9 +158,8 @@ def parameter_optimization(data_dir, preprocess_dir, network_output_dir, postpro
     new configuration file'''
 
     # get ground truth ROIs
-    data, filenames = load_data(data_dir, img_width, img_height)
-    ground_truth_rois = [r for (s,r) in data]
-
+    ground_truth_rois, filenames = load_data(data_dir, img_width, img_height, rois_only=True)
+    
     # get ranges for grid search
     min_threshold = cfg_parser.getfloat('postprocessing optimization', 'min_threshold')
     max_threshold = cfg_parser.getfloat('postprocessing optimization', 'max_threshold')

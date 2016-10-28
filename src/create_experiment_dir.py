@@ -38,15 +38,13 @@ def copy_main_config(dir_name):
     
     #repo_path = src_path.split('ConvnetCellDetection')[0] + 'ConvnetCellDetection/celldetection_znn'
     repo_path = os.path.dirname(src_path) + '/celldetection_znn'
-    cfg_parser.set('network','net_arch_fpath', repo_path + '/N1.znn')
+    cfg_parser.set('network','net_arch_fpath', repo_path + '/2plus1d.znn')
     
     cfg_parser.set('training','training_input_dir', dir_name + '/labeled_preprocessed')
     cfg_parser.set('training','training_output_dir', dir_name + '/labeled_training_output')
-    cfg_parser.set('training','training_net_prefix', dir_name + '/labeled_training_output/N1')
+    cfg_parser.set('training','training_net_prefix', dir_name + '/labeled_training_output/2plus1d')
     
-    cfg_parser.set('forward','forward_net', dir_name + '/labeled_training_output/N1_current.h5')
-    cfg_parser.set('forward','forward_input_dir', dir_name + '/labeled_preprocessed')
-    cfg_parser.set('forward','forward_output_dir', dir_name + '/labeled_training_output')
+    cfg_parser.set('forward','forward_net', dir_name + '/labeled_training_output/2plus1d_current.h5')
     
     with open(config_path, 'wb') as configfile:
         cfg_parser.write(configfile)

@@ -27,7 +27,8 @@ import os
 import os.path
 
 # load video and roi files from argument directory
-def load_data(directory, img_width, img_height, rois_only=False):
+def load_data(directory, img_width, img_height, rois_only=False, no_rois=False):
+    assert(not (rois_only and no_rois))
     if directory[-1] != os.path.sep:
         directory += os.path.sep
 
@@ -45,6 +46,8 @@ def load_data(directory, img_width, img_height, rois_only=False):
         roi_name = directory+fn+'.zip'
         if rois_only:
             data.append(load_rois(roi_name, img_width, img_height))
+        elif no_rois:
+            data.append(load_stack(stack_name))
         else:
             data.append((load_stack(stack_name), load_rois(roi_name, img_width, img_height)))
 

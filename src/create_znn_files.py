@@ -211,8 +211,9 @@ def get_io_dirs(run_type, cfg_parser):
     '''Gets input/output directories for either training data or forward pass'''
     if run_type != 'forward' and run_type != 'training':
         raise ValueError('run_type variable should be one of "forward" or "training"', run_type)
-    input_dir = add_pathsep(cfg_parser.get(run_type, run_type + '_input_dir'))
-    output_dir = add_pathsep(cfg_parser.get(run_type, run_type + '_output_dir'))
+    data_dir = add_pathsep(cfg_parser.get('general', 'data_dir'))[0:-1]
+    input_dir = add_pathsep(data_dir + "_preprocessed")
+    output_dir = add_pathsep(data_dir + "_training_output")
     return input_dir, output_dir
 
 

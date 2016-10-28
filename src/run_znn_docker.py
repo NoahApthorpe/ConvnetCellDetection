@@ -66,15 +66,16 @@ def rename_output_files(cfg_parser, main_config_fpath, forward_output_dir):
         os.rename(old_fname + '_output_0.tif', new_fname + '_output_0.tif')
         os.rename(old_fname + '_output_1.tif', new_fname + '_output_1.tif')
 
-
+        
 def main(main_config_fpath='../data/example/main_config.cfg', run_type='forward'):
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath, 'r'))
     memory = cfg_parser.get('docker', 'memory')
     container_name = cfg_parser.get('docker', 'container_name')
     training_output_dir = add_pathsep(cfg_parser.get('training', 'training_output_dir'))
-    forward_output_dir = add_pathsep(cfg_parser.get('forward', 'forward_output_dir'))
-
+    data_dir = add_pathsep(cfg_parser.get('general', 'data_dir'))[0:-1]
+    forward_output_dir = add_pathsep(data_dir + "_training_output")
+   
     dir_to_mount = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Mounts ConvnetCellDetection directory
     print dir_to_mount
 
@@ -97,6 +98,9 @@ def main(main_config_fpath='../data/example/main_config.cfg', run_type='forward'
 
     if run_type == 'forward':
         rename_output_files(cfg_parser, main_config_fpath, forward_output_dir)
+        cfg_parser.remove_section('fnames')
+        with open(main_config_fpath, 'w') as main_config_file:
+            cfg_parser.write(main_config_file)
 
 
 if __name__ == "__main__":

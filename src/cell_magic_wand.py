@@ -96,14 +96,6 @@ def mask_polar_to_cart(mask, center, min_radius, max_radius, output_shape, zoom_
     ix,iy = np.meshgrid(np.arange(0,mask.shape[1]), np.arange(0,mask.shape[0]))    
     image[x,y] = mask
 
-    '''
-    for i in range(theta.shape[0]):
-        for j in range(theta.shape[1]):
-            #xx, yy = np.max([0, x[i,j]]), np.max([0, y[i,j]])
-            #xx, yy = np.min([xx, image.shape[0]-1]), np.min([yy, image.shape[0]-1])
-            image[xx, yy] = mask[i,j]
-    '''
-
     # downsample image
     if zoom_factor != 1:
         zf = 1/float(zoom_factor)
