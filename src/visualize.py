@@ -190,7 +190,7 @@ class App:
             self.draw_canvas()    
                             
                                         
-def main(main_config_fpath="../main_config_ar.cfg"):
+def main(main_config_fpath="main_config.cfg"):
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath,'r'))
     

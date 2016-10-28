@@ -79,7 +79,7 @@ def score_labeled_data(main_config_fpath):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print "Usage: python " + sys.argv[0] + " <pipeline step> <config filepath>"
+        print "Usage: python " + sys.argv[0] + " <complete|create|preprocess|train|forward|postprocess|score> <config file path | new experiment name>"
         sys.exit()
     cmd = sys.argv[1]
     param = sys.argv[2]

@@ -265,7 +265,7 @@ def parameter_optimization(data_dir, preprocess_dir, network_output_dir, postpro
     return
 
 
-def main(main_config_fpath='../main_config_ar.cfg'):
+def main(main_config_fpath='main_config.cfg'):
     '''Get user-specified information from main_config.cfg'''
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath,'r'))

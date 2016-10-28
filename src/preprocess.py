@@ -222,7 +222,7 @@ def put_labeled_at_end_of_path_if_not_there(fpath):
         return fpath
 
 
-def main(main_config_fpath='../main_config_ar.cfg'):
+def main(main_config_fpath='main_config.cfg'):
     '''Get user-specified information from main_config.cfg'''
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath, 'r'))

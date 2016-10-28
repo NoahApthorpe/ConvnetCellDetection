@@ -237,7 +237,7 @@ def score_labeled_data(postprocess_dir, data_dir, img_width, img_height):
         score_file.write(str(score))
             
 
-def main(main_config_fpath='../main_config_ar.cfg'):
+def main(main_config_fpath='main_config.cfg'):
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath,'r'))
     

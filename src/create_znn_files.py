@@ -221,7 +221,7 @@ def check_tif_depth():
     pass
 
 
-def main(main_config_fpath='../main_config_ar.cfg', run_type='forward'):
+def main(main_config_fpath='main_config.cfg', run_type='forward'):
     '''Get user-specified information from main_config.cfg'''
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath, 'r'))
