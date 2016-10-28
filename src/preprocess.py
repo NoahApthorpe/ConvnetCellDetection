@@ -203,21 +203,8 @@ def split_labeled_directory(split_dict, dir_to_split, is_ROI_tif, is_post_proces
             base = os.path.splitext(fname)[0]
             if base in f:
                 os.rename(dir_to_split + f, dir_to_split + subdir + os.sep + f)
-    '''
-        if is_post_process and ".zip" in fname:
-            continue
-        if is_ROI_tif:
-            fname = fname.replace(".zip", "_ROI.tif")
-        try:
-            # move fname into new subdir
-            os.rename(dir_to_split + fname, dir_to_split + subdir + '/' + fname)
-            if is_post_process:
-                fname = fname.split('.')[0] + '.npz'
-                os.rename(dir_to_split + fname, dir_to_split + subdir + '/' + fname)
-        except AssertionError:
-            print fname, ' was not found in ', dir_to_split, ' while attempting to maintain training/test/validation split'
-    '''
 
+                
 def put_labeled_at_end_of_path_if_not_there(fpath):
     if fpath[-1] == '/':
         fpath = fpath[:-1]

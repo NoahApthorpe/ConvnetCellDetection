@@ -66,9 +66,9 @@ class Score:
         self.categorized = categorize(self.predictions, self.actual)
         self.precisions, self.total_precision, self.recalls, self.total_recall = calc_precision_recall(self.categorized)
         self.f1_scores = map(calc_f1_score, zip(self.precisions, self.recalls))
-        print self.f1_scores
+        #print self.f1_scores
         self.total_f1_score = np.mean(self.f1_scores) 
-        print self.total_f1_score
+        #print self.total_f1_score
         self.overlap_bqs, self.total_overlap_bq = overlap_boundary_quality(self.categorized)
        
     def __str__(self):

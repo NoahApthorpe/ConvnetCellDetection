@@ -88,9 +88,11 @@ def find_neuron_centers(im, threshold, min_size, merge_size, max_footprint=(7,7)
     t = remove_small_objects(t, min_size)
     c = im.copy()
     c[np.logical_not(t)] = 0
-    c = (c-c.min())/(c.max()-c.min())
+    if c.max() != c.min():
+        c = (c-c.min())/(c.max()-c.min())
     d = ndi.distance_transform_edt(c)
-    d = (d-d.min())/(d.max()-d.min())
+    if d.max() != d.min():
+        d = (d-d.min())/(d.max()-d.min())
     p = c+d
     local_max = peak_local_max(p, indices=False, footprint=np.ones(max_footprint), labels=t)
     markers = ndi.label(local_max)[0]
@@ -140,11 +142,15 @@ def postprocessing(preprocess_dir, network_output_dir, postprocess_dir,
         rois = []
         roi_probs = []
         for j,c in enumerate(seeds):
-            print str(j) + "/" + str(len(seeds)-1),
+            print str(j) + "/" + str(len(seeds)-1)
             roi = cell_magic_wand(preprocessed_images[i], c, min_size_wand, max_size_wand)
             roi_prob = np.sum(np.multiply(roi, padded_network_image))/np.sum(roi)
             rois.append(roi)
             roi_probs.append(roi_prob)
+
+        if len(rois) == 0:
+            rois.append(np.zeros(preprocessed_images[i].shape))
+            
         rois = np.array(rois)
         all_rois.append(rois)
         all_roi_probs.append(roi_probs)
@@ -152,8 +158,8 @@ def postprocessing(preprocess_dir, network_output_dir, postprocess_dir,
 
 
 def parameter_optimization(data_dir, preprocess_dir, network_output_dir, postprocess_dir,
-                           border, min_size_wand, max_size_wand, 
-                           ground_truth_directory, params_cfg_fn, cfg_parser):
+                           border, min_size_wand, max_size_wand, img_width, img_height,
+                           params_cfg_fn, cfg_parser):
     '''Performs grid search optimization of postprocessing parameters and stores result in
     new configuration file'''
 
@@ -183,15 +189,16 @@ def parameter_optimization(data_dir, preprocess_dir, network_output_dir, postpro
 
     # run grid search and save scores
     scores_params = []
-    for threshold, min_size_watershed, max_footprint, max_size_wand in itertools.product(threshold_range, min_size_watershed_range, max_footprint_range, max_size_wand):
+    for threshold, min_size_watershed, max_footprint, max_size_wand in itertools.product(threshold_range, min_size_watershed_range, max_footprint_range, max_size_wand_range):
         merge_size_watershed = min_size_watershed
         print "Testing threshold: " + str(threshold) + " min_size_watershed: " + str(min_size_watershed) + " max_footprint: " + str(max_footprint) + " max_size_wand: " + str(max_size_wand)
-        rois, roi_probs, filenames = postprocessing(preprocess_directory, network_output_directory,
-                                                    postprocess_directory, border, threshold, 
+        rois, roi_probs, filenames = postprocessing(preprocess_dir, network_output_dir,
+                                                    postprocess_dir, border, threshold, 
                                                     min_size_watershed, merge_size_watershed,
                                                     (max_footprint,max_footprint),
                                                     min_size_wand, max_size_wand)
         s = Score(ground_truth_rois, rois)
+        print "F1 score: " + str(s.total_f1_score)
         scores_params.append((s.total_f1_score, {'probability_threshold':threshold,
                                                  'min_size_watershed':min_size_watershed, 
                                                  'merge_size_watershed':merge_size_watershed,
@@ -206,8 +213,10 @@ def parameter_optimization(data_dir, preprocess_dir, network_output_dir, postpro
     params_cfg_parser.add_section("postprocessing")
     for param in best_params:
         params_cfg_parser.set("postprocessing", param, str(best_params[param]))
-    params_cfg_parser.write(open(params_cfg_fn,'w'));
-
+    with open(params_cfg_fn, 'w') as params_cfg_file:
+        params_cfg_parser.write(params_cfg_file)
+    return params_cfg_parser
+        
 
 def main(main_config_fpath='../data/example/main_config.cfg'):
     '''Get user-specified information from main_config.cfg'''
@@ -251,9 +260,13 @@ def main(main_config_fpath='../data/example/main_config.cfg'):
         params_cfg_parser.readfp(open(opt_params_cfg_fn, 'r'))
     elif (do_gridsearch_postprocess_params and
           not os.path.isfile(opt_params_cfg_fn) and is_labeled(data_dir)):
-        parameter_optimization(preprocess_dir + ttv_list[1], network_output_dir + ttv_list[1],
-                               postprocess_dir + ttv_list[1], border, min_size_wand,
-                               max_size_wand, opt_params_cfg_fn, cfg_parser)
+        params_cfg_parser = parameter_optimization(data_dir + ttv_list[1],
+                                                   preprocess_dir + ttv_list[1],
+                                                   network_output_dir + ttv_list[1],
+                                                   postprocess_dir + ttv_list[1],
+                                                   border, min_size_wand,
+                                                   max_size_wand, img_width, img_height,
+                                                   opt_params_cfg_fn, cfg_parser)
     else:
         params_cfg_parser = cfg_parser
          
@@ -262,7 +275,7 @@ def main(main_config_fpath='../data/example/main_config.cfg'):
     min_size_watershed = params_cfg_parser.getfloat('postprocessing', 'min_size_watershed')
     merge_size_watershed = params_cfg_parser.getfloat('postprocessing', 'merge_size_watershed')
     max_footprint_str = params_cfg_parser.get('postprocessing', 'max_footprint')
-    max_footprint = tuple([int(c) for c in max_footprint_str.strip().strip(')').strip('(').split(",")])
+    max_footprint = tuple([int(float(c)) for c in max_footprint_str.strip().strip(')').strip('(').split(",")])
     max_size_wand = params_cfg_parser.getfloat('postprocessing', 'max_size_wand')
     assert(len(max_footprint) == 2)
 
