@@ -36,6 +36,7 @@ from cell_magic_wand import cell_magic_wand
 
 
 def read_network_output(directory):
+    '''reads tiff output of ZNN into numpy arrays and corresponding filenames'''
     images = []
     filenames = []
     for fname in os.listdir(directory):
@@ -50,6 +51,8 @@ def read_network_output(directory):
 
 
 def read_preprocessed_images(directory, filenames):
+    '''reads and correlates preprocessed images
+    input to ZNN with filenames read by read_network_output'''
     directory = add_pathsep(directory)
     images = []
     for fname in filenames:
@@ -69,6 +72,7 @@ def read_preprocessed_images(directory, filenames):
 
 
 def watershed_centroids(labels):
+    '''finds centroids of watershed regions'''
     new_markers = np.zeros(labels.shape)
     for label in set(labels.flatten()):
         cx,cy = np.where(labels == label)
@@ -78,6 +82,8 @@ def watershed_centroids(labels):
 
 
 def find_neuron_centers(im, threshold, min_size, merge_size, max_footprint=(7,7)):
+    '''finds putative centers of neurons by thresholding and 
+    watershedding with a distance transform'''
     t = im > threshold
     t = remove_small_objects(t, min_size)
     c = im.copy()
@@ -113,6 +119,7 @@ def markers_to_param_file(markers, min_size, max_size, fname, border, upscale_fa
 '''
 
 def markers_to_seeds(markers, border):
+    '''converts watershed markers to seed points for magic wand'''
     centers = []
     for m in set(markers.flatten()):
         if m == 0: continue
@@ -160,6 +167,8 @@ def edge_file_to_rois(fname, size=512):
 def postprocessing(preprocess_dir, network_output_dir, postprocess_dir, 
                    border, threshold, min_size_watershed, merge_size_watershed, max_footprint, 
                    min_size_wand, max_size_wand):
+    '''Performs postprocessing with argument parameters. Returns ROIs 
+    and associated filenames'''
 
     '''
     # create directory for magic wand parameters and edge output
@@ -171,15 +180,13 @@ def postprocessing(preprocess_dir, network_output_dir, postprocess_dir,
     # convert probability maps into neuron centers
     network_images, filenames = read_network_output(network_output_dir)
     preprocessed_images = read_preprocessed_images(preprocess_dir, filenames)
-
     markers, labels = zip(*[find_neuron_centers(im, threshold, min_size_watershed, merge_size_watershed, max_footprint=max_footprint) for im in network_images])
 
+    # run magic wand cell edge detection
     all_rois = []
     all_roi_probs = []
     for i in range(len(network_images)):
-        print i
-        print network_images[i].shape
-        print preprocessed_images[i].shape
+        print "Running magic wand for " + filenames[i]
         size_diff_0th = preprocessed_images[i].shape[0] - network_images[i].shape[0]
         size_diff_1th = preprocessed_images[i].shape[0] - network_images[i].shape[0]
         padded_network_image = np.pad(network_images[i], ((int(np.floor(size_diff_0th/2.0)), int(np.ceil(size_diff_0th/2.0))),
@@ -188,16 +195,13 @@ def postprocessing(preprocess_dir, network_output_dir, postprocess_dir,
         rois = []
         roi_probs = []
         for j,c in enumerate(seeds):
-            print "   " + str(c)
-            if j > 15: break
             roi = cell_magic_wand(preprocessed_images[i], c, min_size_wand, max_size_wand)
-            roi_prob = np.sum(np.multiply(roi, padded_network_image))
+            roi_prob = np.sum(np.multiply(roi, padded_network_image))/np.sum(roi)
             rois.append(roi)
             roi_probs.append(roi_prob)
         rois = np.array(rois)
         all_rois.append(rois)
         all_roi_probs.append(roi_probs)
-    print filenames
     return all_rois, all_roi_probs, filenames        
         
     
@@ -232,13 +236,36 @@ def postprocessing(preprocess_dir, network_output_dir, postprocess_dir,
 
 def parameter_optimization(data_dir, preprocess_dir, network_output_dir, postprocess_dir,
                            border, min_size_wand, max_size_wand, 
-                           ground_truth_directory, params_cfg_fn):
+                           ground_truth_directory, params_cfg_fn, cfg_parser):
+    '''Performs grid search optimization of postprocessing parameters and stores result in
+    new configuration file'''
+
+    # get ground truth ROIs
     data, filenames = load_data(data_dir, img_width, img_height)
     ground_truth_rois = [r for (s,r) in data]
-    threshold_range = np.linspace(0.7,0.9,1)
-    min_size_watershed_range = np.linspace(15,30,1)
-    max_footprint_range = np.linspace(7,7,1)
-    max_size_wand_range = np.linspace(min_size_wand+1, max_size_wand, 1)
+
+    # get ranges for grid search
+    min_threshold = cfg_parser.getfloat('postprocessing optimization', 'min_threshold')
+    max_threshold = cfg_parser.getfloat('postprocessing optimization', 'max_threshold')
+    steps_threshold = cfg_parser.getint('postprocessing optimization', 'steps_threshold')
+    min_minsize = cfg_parser.getfloat('postprocessing optimization', 'min_minsize')
+    max_minsize = cfg_parser.getfloat('postprocessing optimization', 'max_minsize')
+    steps_minsize = cfg_parser.getint('postprocessing optimization', 'steps_minsize')
+    min_footprint = cfg_parser.getfloat('postprocessing optimization', 'min_footprint')
+    max_footprint = cfg_parser.getfloat('postprocessing optimization', 'max_footprint')
+    steps_footprint = cfg_parser.getint('postprocessing optimization', 'steps_footprint')
+    steps_wand = cfg_parser.getint('postprocessing optimization', 'steps_wand')
+
+    # make ranges for grid search
+    threshold_range = np.linspace(min_threshold, max_threshold, steps_threshold)
+    min_size_watershed_range = np.linspace(min_minsize, max_minsize, steps_minsize)
+    max_footprint_range = np.linspace(min_footprint, max_footprint, steps_footprint)
+    if steps_wand < 2:
+        max_size_wand_range = np.array([max_size_wand])
+    else:
+        max_size_wand_range = np.linspace(min_size_wand+1, max_size_wand, steps_wand)
+
+    # run grid search and save scores
     scores_params = []
     for threshold, min_size_watershed, max_footprint, max_size_wand in itertools.product(threshold_range, min_size_watershed_range, max_footprint_range, max_size_wand):
         merge_size_watershed = min_size_watershed
@@ -254,6 +281,8 @@ def parameter_optimization(data_dir, preprocess_dir, network_output_dir, postpro
                                                  'merge_size_watershed':merge_size_watershed,
                                                  'max_footprint':(max_footprint, max_footprint),
                                                  'max_size_wand':max_size_wand}))
+
+    # find best score and save corresponding parameters
     scores_params.sort()
     best_params = scores_params[-1][1]
     print "Best F1 score: " + str(scores_params[-1][0])
@@ -309,7 +338,7 @@ def main(main_config_fpath='main_config.cfg'):
           not os.path.isfile(opt_params_cfg_fn) and is_labeled(data_dir)):
         parameter_optimization(preprocess_dir + ttv_list[1], network_output_dir + ttv_list[1],
                                postprocess_dir + ttv_list[1], border, min_size_wand,
-                               max_size_wand, opt_params_cfg_fn)
+                               max_size_wand, opt_params_cfg_fn, cfg_parser)
     else:
         params_cfg_parser = cfg_parser
          
