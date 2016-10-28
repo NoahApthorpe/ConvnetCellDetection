@@ -140,6 +140,7 @@ def postprocessing(preprocess_dir, network_output_dir, postprocess_dir,
         rois = []
         roi_probs = []
         for j,c in enumerate(seeds):
+            print str(j) + "/" + str(len(seeds)-1),
             roi = cell_magic_wand(preprocessed_images[i], c, min_size_wand, max_size_wand)
             roi_prob = np.sum(np.multiply(roi, padded_network_image))/np.sum(roi)
             rois.append(roi)
