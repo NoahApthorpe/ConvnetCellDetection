@@ -67,7 +67,7 @@ def rename_output_files(cfg_parser, main_config_fpath, forward_output_dir):
         os.rename(old_fname + '_output_1.tif', new_fname + '_output_1.tif')
 
 
-def main(main_config_fpath='main_config.cfg', run_type='forward'):
+def main(main_config_fpath='../data/example/main_config.cfg', run_type='forward'):
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath, 'r'))
     memory = cfg_parser.get('docker', 'memory')

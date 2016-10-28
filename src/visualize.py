@@ -1,4 +1,14 @@
-#!/usr/bin/env python
+##########################################################################
+#
+# GUI allowing inspection and manual thresholding of Convnet ROIs
+# based on average probability (from Convnet output) inside each ROI
+#
+# Author: Noah Apthorpe
+#
+# Usage: python visualize.py <configuration filepath>
+#
+###########################################################################
+
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -12,12 +22,13 @@ from Tkinter import *
 from collections import defaultdict
 import numpy as np
 import ConfigParser
-
 from preprocess import add_pathsep, is_labeled
 from load import load_stack, load_rois
 
-class App:
 
+class App:
+    '''Tkinter GUI application'''
+    
     def __init__(self, root, files, img_width, img_height, islabeled):
         self.current_index = 0
         self.files_keys = files.keys()
@@ -29,6 +40,7 @@ class App:
         self.manual_thresh.trace("w", self.manual_thresh_change)
         self.make_widgets(root, img_width, img_height, islabeled)
         self.load_files()
+
         
     def make_widgets(self, root, img_width, img_height, islabeled):
         # enclosing frame
@@ -74,6 +86,7 @@ class App:
 
         
     def load_files(self):
+        '''load a new image and corresponding ROIs'''
         current_files = self.files[self.files_keys[self.current_index]]
         self.filename_label.config(text=self.files_keys[self.current_index])
         self.image = load_stack(current_files[0])
@@ -107,7 +120,8 @@ class App:
         self.draw_canvas()
 
 
-    def draw_canvas(self):        
+    def draw_canvas(self):
+        '''draw current image and selected ROIs'''
         self.f.clf()
         overlay = np.zeros((self.image.shape[1], self.image.shape[2], 3))
         overlay[:,:,0] = self.image[self.image_index,:,:]
@@ -132,28 +146,36 @@ class App:
 
             
     def roi_slider_change(self, value):
+        '''callback for threshold value slider''' 
         self.roi_index = int(value)
         if self.manual_thresh.get() != "" and not self.just_set_thresh:
             self.manual_thresh.set("")
         self.just_set_thresh = False
         self.draw_canvas()
+
         
     def image_slider_change(self, value):
+        '''callback for image sequence slider'''
         self.image_index = int(value)
         self.draw_canvas()
         
+        
     def save_button_press(self):
+        '''callback to save currently selected ROIs'''
         current_roi_indices = [i for (v,i) in self.indexed_roi_probs[0:self.roi_index]]
         current_rois = self.convnet_rois[current_roi_indices]
         current_files = self.files[self.files_keys[self.current_index]]
         new_file = current_files[1][0:-4] + "_MANUAL.npz"
         np.savez_compressed(new_file, rois=current_rois)
         print "saved as " + new_file
+
         
     def make_index_label(self):
+        '''returns current image index as fraction string'''
         return str(self.current_index+1) + "/" + str(len(self.files_keys))
         
     def next_image_button_press(self):
+        '''callback for next image button'''
         if self.current_index < len(self.files_keys)-1:
              self.current_index += 1
              self.index_label.config(text=self.make_index_label())
@@ -162,8 +184,10 @@ class App:
             self.next_image_button.config(state=DISABLED)
         if self.current_index > 0:
             self.prev_image_button.config(state=NORMAL)
-        
+
+            
     def prev_image_button_press(self):
+        '''callback for previous image button'''
         if self.current_index > 0:
             self.current_index -= 1
             self.index_label.config(text=self.make_index_label())
@@ -173,11 +197,15 @@ class App:
         if self.current_index < len(self.files_keys)-1:
             self.next_image_button.config(state=NORMAL)
 
+            
     def gt_labels_button_press(self):
+        '''callback for show/hide ground truth ROIs button'''
         self.gt_labels = not self.gt_labels
         self.draw_canvas()
 
+        
     def manual_thresh_change(self, *args):
+        '''callback for manual thresholsd entry'''
         if self.manual_thresh.get().strip() != "":
             new_index = self.convnet_rois.shape[0]
             for j,(p,ind) in enumerate(self.indexed_roi_probs):
@@ -190,11 +218,12 @@ class App:
             self.draw_canvas()    
                             
                                         
-def main(main_config_fpath="main_config.cfg"):
+def main(main_config_fpath="../data/example/main_config.cfg"):
+    '''use configuration file to find all image and
+    ROI paths then start GUI application'''
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath,'r'))
     
-    # get directory paths
     data_dir = add_pathsep(cfg_parser.get('general', 'data_dir'))
     preprocess_dir = data_dir[0:-1] + "_preprocessed" + os.sep
     postprocess_dir = data_dir[0:-1] + "_postprocessed" + os.sep
@@ -224,11 +253,10 @@ def main(main_config_fpath="main_config.cfg"):
                        
     root = Tk()
     root.wm_title("ConvnetCellDetection")
-
     app = App(root, files, img_width, img_height, is_labeled(data_dir))
-
     root.mainloop()
 
+    
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print "Usage python " + sys.argv[0] + "config_file_path"

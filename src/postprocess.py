@@ -104,19 +104,6 @@ def find_neuron_centers(im, threshold, min_size, merge_size, max_footprint=(7,7)
     markers = watershed_centroids(labels)
     return markers, labels
 
-'''
-def markers_to_param_file(markers, min_size, max_size, fname, border, upscale_factor=1):
-    text = "minDiameter {}\nmaxDiameter {}\nroughness 1.0\nimageType brightCells\n".format(min_size, max_size)
-    for m in set(markers.flatten()):
-        if m == 0: continue
-        x,y = np.where(markers == m)
-        x = (x[0]*upscale_factor)+border
-        y = ((y[0]*upscale_factor)+border)
-        text += "seed {} {}\n".format(y,x)
-    f = open(fname,'w')
-    f.write(text)
-    f.close()
-'''
 
 def markers_to_seeds(markers, border):
     '''converts watershed markers to seed points for magic wand'''
@@ -129,54 +116,12 @@ def markers_to_seeds(markers, border):
         centers.append((y,x))
     return centers
 
-'''        
-def sort_clockwise(edges):
-    x = np.array([e[0] for e in edges])
-    y = np.array([e[1] for e in edges])
-    cx = np.mean(x)
-    cy = np.mean(y)
-    a = np.arctan2(y - cy, x - cx)
-    order = a.ravel().argsort()
-    x = list(x[order])
-    y = list(y[order])
-    x.append(x[0])
-    y.append(y[0])
-    return zip(np.array(x),np.array(y))
-
-
-def edge_file_to_rois(fname, size=512):
-    f = open(fname, 'r')
-    rois = []
-    for ln,line in enumerate(f):
-        nroi = np.zeros((size,size))
-        points = [s.strip('()\n') for s in line.split('),(')]
-        edges = np.zeros((len(points),2))
-        for i,p in enumerate(points):
-            x,y = p.split(',')
-            edges[i,0] = int(x)
-            edges[i,1] = int(y)
-        edges = sort_clockwise(edges)
-        mask = grid_points_in_poly((size,size), edges).astype(np.float32)
-        nm = np.zeros(mask.shape)
-        for x,y in itertools.product(range(size), range(size)):
-            nm[x,y] = mask[y,x]
-        rois.append(nm)
-    return np.array(rois)
-'''
 
 def postprocessing(preprocess_dir, network_output_dir, postprocess_dir, 
                    border, threshold, min_size_watershed, merge_size_watershed, max_footprint, 
                    min_size_wand, max_size_wand):
     '''Performs postprocessing with argument parameters. Returns ROIs 
     and associated filenames'''
-
-    '''
-    # create directory for magic wand parameters and edge output
-    magicwand_directory = postprocess_directory + "magicwand" + os.path.sep
-    if not os.path.isdir(magicwand_directory):
-        os.mkdir(magicwand_directory)
-    '''
-
     # convert probability maps into neuron centers
     network_images, filenames = read_network_output(network_output_dir)
     preprocessed_images = read_preprocessed_images(preprocess_dir, filenames)
@@ -203,36 +148,7 @@ def postprocessing(preprocess_dir, network_output_dir, postprocess_dir,
         all_rois.append(rois)
         all_roi_probs.append(roi_probs)
     return all_rois, all_roi_probs, filenames        
-        
-    
-    '''
-    # write parameter files for magic wand tool    
-    for i in range(len(images)):
-        magicwand_params_fn = magicwand_directory + filenames[i]+".txt"
-        markers_to_param_file(markers[i], min_size_wand, max_size_wand, 
-                              magicwand_params_fn, border)
 
-    # run magic wand tool
-    # magicwand_classpath = "./src/cellMagicWand"
-    magicwand_classpath = os.path.dirname(os.path.abspath(__file__)) + '/cellMagicWand'
-    magicwand_compile = " ".join(["javac -cp", magicwand_classpath, "MagicWand.java"])
-    magicwand_command = " ".join(["java -cp", magicwand_classpath, "MagicWand", 
-                                  preprocess_directory, magicwand_directory])
-    process = subprocess.Popen(magicwand_command, shell=True, 
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    print stderr
-        
-    # convert magic wand output into ROIs
-    rois = []
-    filenames = []    
-    for fn in os.listdir(magicwand_directory):
-        if os.path.basename(fn).find('edges') != -1:
-            rois.append(edge_file_to_rois(magicwand_directory + fn))
-            filenames.append(fn.partition('_edges')[0])
-    
-    return rois, filenames
-    '''
 
 def parameter_optimization(data_dir, preprocess_dir, network_output_dir, postprocess_dir,
                            border, min_size_wand, max_size_wand, 
@@ -291,10 +207,9 @@ def parameter_optimization(data_dir, preprocess_dir, network_output_dir, postpro
     for param in best_params:
         params_cfg_parser.set("postprocessing", param, str(best_params[param]))
     params_cfg_parser.write(open(params_cfg_fn,'w'));
-    return
 
 
-def main(main_config_fpath='main_config.cfg'):
+def main(main_config_fpath='../data/example/main_config.cfg'):
     '''Get user-specified information from main_config.cfg'''
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath,'r'))
@@ -364,13 +279,7 @@ def main(main_config_fpath='main_config.cfg'):
             roi_name = postprocess_dir + ttv + filenames[i] + '.tif'
             tifffile.imsave(roi_name, r.astype(np.float32))
             np.savez_compressed(postprocess_dir + ttv + filenames[i] + '.npz', rois=roi, roi_probabilities=final_roi_probs[i])
-            
-    '''
-    # Impose test/train/validation split on postprocess directory if applicable 
-    if preprocess.is_labeled(data_directory) :
-        split_dict = preprocess.get_labeled_split(data_directory)
-        preprocess.split_labeled_directory(split_dict, postprocess_directory, False, True)
-    '''
 
+            
 if __name__ == "__main__":
     main()
