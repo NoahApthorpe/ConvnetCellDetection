@@ -40,18 +40,26 @@ def load_data(directory, img_width, img_height, rois_only=False, no_rois=False):
     if '' in file_names:
         file_names.remove('')
         
-    data = []
+    stks = []
+    rois = []
     for fn in file_names:
         stack_name = directory+fn+'.tif'
         roi_name = directory+fn+'.zip'
         if rois_only:
-            data.append(load_rois(roi_name, img_width, img_height))
+            rois.append(load_rois(roi_name, img_width, img_height))
         elif no_rois:
-            data.append(load_stack(stack_name))
+            stks.append(load_stack(stack_name))
         else:
-            data.append((load_stack(stack_name), load_rois(roi_name, img_width, img_height)))
-
-    return data, list(file_names)
+            stks.append(load_stack(stack_name))
+            rois.append(load_rois(roi_name, img_width, img_height))
+            #data.append((load_stack(stack_name), load_rois(roi_name, img_width, img_height)))
+    if rois_only:
+        return stks, list(file_names)
+    elif no_rois:
+        return rois, list(file_names)
+    else:
+        return stks, rois, list(file_names) 
+    #return data, list(file_names)
 
 
 # tif -> (frame #, width, height)
