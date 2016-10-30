@@ -22,7 +22,7 @@ If you publish the results of research using this tool or any of the code contai
   - [Run Convnet Cell Detection pipeline](#run-convnet-cell-detection-pipeline)
   - [Label new data](#label-new-data)
 - [Changing Network Architectures](#changing-network-architectures) (Advanced Users)
-- [Detailed Parameter Configuration](#detailed-parameter-configuration) (Advanced Users)
+- [Detailed Parameter Descriptions](#detailed-parameter-descriptions) (Advanced Users)
 
 ## Overview
 Convnet Cell Detection is a data processing pipeline for automatically detecting cells in microscope images using convolutional neural networks (convnets).  We developed and tested this pipeline to find neuron cell bodies in two-photon microscope images, but believe that the technique will be be effective for other cellular microscopy applications as well. 
@@ -138,7 +138,7 @@ You can run just the preprocessing component of the pipeline with the command `p
 
 ##### Train convolutional network
 
-The training component of the pipeline trains a convnet using ZNN in a Docker image. You can run just the training component of the pipeline with the command `python pipeline.py train <config file path>`. For the example experiment, this would be `python pipeline.py train ../data/example/main_config.cfg`. 
+The training component of the pipeline trains a convnet using ZNN in a Docker virtual machine. You can run just the training component of the pipeline with the command `python pipeline.py train <config file path>`. For the example experiment, this would be `python pipeline.py train ../data/example/main_config.cfg`. 
 
 This command will start a docker image and begin ZNN training. It will print the training iteration and the current pixel error periodically. The trained network is automatically saved every 1000 iterations.  Training will continue until you press `ctrl-c`. If you re-run the training command, it will resume training at the last saved iteration. If you wish to restart training, you will need to delete the saved `.h5` files in the `labeled_training_output` directory. If you are running the pipeline on a server, we suggest you use a session manager such as `tmux` to ensure that training is not interrupted if your connection to the server is lost.  
 
@@ -178,13 +178,78 @@ Once a convnet is trained, labeling new data is simple:
 
 You can use a different network architecture than the default (2+1)D network as follows:
 
-1. Create (or use an existing) `.znn` file in the `ConvnetCellDetection/celldetection_znn/` directory.  We have provided `.znn` files for the (2+1)D network (`2plus1d.znn`) and the 2D network (`2d.znn`) described in the [NIPS paper](#citing) and for a small one-level network for testing and debugging (`N1.znn`). The [ZNN documentation](http://znn-release.readthedocs.io/en/latest/index.html) describes the `.znn` format for defining a network architecture. 
+1. Create (or use an existing) `.znn` file in the `ConvnetCellDetection/celldetection_znn/` directory.  We have provided `.znn` files for the (2+1)D network (`2plus1d.znn`) and the 2D network (`2d.znn`) described in the [NIPS paper](#citing) and for a small one-level network for testing and debugging (`N1.znn`). The [ZNN documentation](http://znn-release.readthedocs.io/en/latest/index.html) describes the `.znn` format for defining a network architecture in detail. 
 
 2. Replace all instances of "2plus1d" in the `main_config.cfg` file for your experiment with the name of the new `.znn` file.
 
-## Detailed Parameter Configuration
+## Detailed Parameter Descriptions
 
+The `main_config.cfg` configuration file contains many parameters that will not need to be changed for general use. However, advanced users may wish to adjust these parameters for particular use cases. The following are 
 
+general
 
- 
+- data_dir = ../data/v1/labeled
+- img_width = 512
+- img_height = 512
+- do_downsample = 0
+- do_gridsearch_postprocess_params = 0
 
+preprocessing
+
+- time_equalize = 50
+- mean_proj_bin = 167
+- max_proj_bin = 6
+- upper_contrast = 99
+- lower_contrast = 3
+- centroid_radius = 4
+
+network
+
+- net_arch_fpath = /Users/noahapthorpe/Documents/Research/ConvnetCellDetection/ConvnetCellDetection/celldetection_znn/2plus1d.znn
+- filter_size = 10
+- field_of_view = 36
+- is_squashing = yes
+
+training
+
+- learning_rate = .005
+- momentum = .9
+- max_iter = 100000
+- num_iter_per_save = 1000
+- patch_size = 1,120,120
+- training_input_dir = ../data/v1/labeled_preprocessed
+- training_output_dir = ../data/v1/labeled_training_output
+- training_net_prefix = ../data/v1/labeled_training_output/2plus1d
+
+forward
+
+- forward_outsz = 1,220,220
+- forward_net = ../data/v1/labeled_training_output/2plus1d_current.h5
+
+docker
+
+- container_id = foo
+- memory = 4096
+- container_name = conv_net_test
+
+postprocessing
+
+- probability_threshold = 0.83
+- min_size_watershed = 60
+- merge_size_watershed = 60
+- max_footprint = 7,7
+- min_size_wand = 10
+- max_size_wand = 22
+
+postprocessing optimization
+
+- min_threshold = 0.8
+- max_threshold = 0.95
+- steps_threshold = 4
+- min_minsize = 20
+- max_minsize = 100
+- steps_minsize = 5
+- min_footprint = 7
+- max_footprint = 7
+- steps_footprint = 1
+- steps_wand = 1
