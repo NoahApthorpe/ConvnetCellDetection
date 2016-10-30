@@ -21,6 +21,7 @@ If you publish the results of research using this tool or any of the code contai
   - [Provide training data](#provide-training-data)
   - [Run Convnet Cell Detection pipeline](#run-convnet-cell-detection-pipeline)
   - [Label new data](#label-new-data)
+- [Changing Network Architectures](#changing-network-architectures) (Advanced Users)
 - [Detailed Parameter Configuration](#detailed-parameter-configuration) (Advanced Users)
 
 ## Overview
@@ -83,7 +84,7 @@ The primary interface to the pipeline is via the `pipeline.py` script, which tak
 
 All `python` commands must be run from the `src` directory of the `ConvnetCellDetection` repository to ensure corrent relative file paths. 
 
-#### Set up new experiment
+### Set up new experiment
 
 Run `python pipeline.py <experiment_name>` to create a new folder in the `data` directory for your experiment. This folder will be pre-initialized with a `main_config.cfg` configuration file and a `labeled` directory to hold pre-labeled training, valdiation, and testing data.
 
@@ -93,7 +94,7 @@ The `labeled` directory and it's `training/validation/test` subdirectories are s
 
 For ease of inspection, the output of each intermediate step in the pipeline is saved in a unique directory (e.g. `labeled_preprocessed` and `labeled_training_output`).  Do not re-name these directories as they are detected by name in the Python scripts. 
 
-#### Prepare configuration file
+### Prepare configuration file
 
 The `main_config.cfg` file in each experiment directory contains customizeable parameters.  This file defaults to the parameters used for training the (2+1)D network on the V1 dataset described in our [NIPS paper](#citing).  Note that all relative filepaths in the config file are relative to the `src/` directory. 
 
@@ -101,7 +102,7 @@ The first parameter (`data_dir`) points to the subdirectory of your experiment c
 
 Details about further customization using other parameters in the `main_config.cfg` file are provided in the [Detailed Parameter Configuration](#detailed-parameter-configuration) section.
 
-#### Provide training data
+### Provide training data
 
 Training data for Convnet Cell Dectection should be a representative sample of your microscopy images large enough to showcase the varying appearance of cells you wish to find. The convolutional network will learn to detect cells that share characteristics with the labeled cells in the training data. If you are missing an entire class or orientation of cells in the training data, do not expect the convolutional network to detect them either.  
 
@@ -116,7 +117,7 @@ Training images and labels should be divided into 3 sets, 1) `training`, 2) `val
 
 The `data/example` directory contains an correctly set up example experiment you can use for comparing file types and naming conventions. 
 
-#### Run Convnet Cell Detection pipeline
+### Run Convnet Cell Detection pipeline
 
 The command `python pipeline.py complete <config file path>` will run the entire pipeline. For the example experiment, this would be `python pipeline.py complete ../data/example/main_config.cfg`. 
 
@@ -124,7 +125,7 @@ If the `data_dir` parameter of the `main_config.cfg` file points to a `labeled` 
 
 Each of the following sections describes a component of the pipeline in greater detail and provides instructions for executing it individually. This is useful if there is a problem and the script stops prematurely, if you wish to inspect the intermediate output of each pipeline step before moving on, or if you wish to re-run a particular step using different parameters.
 
-###### Preprocessing
+##### Preprocessing
 
 The preprocessing component of the Convnet Cell Detection pipeline prepares supplied images for convnet training, as follows:
 
@@ -135,7 +136,7 @@ The preprocessing component of the Convnet Cell Detection pipeline prepares supp
 
 You can run just the preprocessing component of the pipeline with the command `python pipeline.py preprocess <config file path>`. For the example experiment, this would be `python pipeline.py preprocess ../data/example/main_config.cfg`. 
 
-###### Train convolutional network
+##### Train convolutional network
 
 The training component of the pipeline trains a convnet using ZNN in a Docker image. You can run just the training component of the pipeline with the command `python pipeline.py train <config file path>`. For the example experiment, this would be `python pipeline.py train ../data/example/main_config.cfg`. 
 
@@ -143,18 +144,47 @@ This command will start a docker image and begin ZNN training. It will print the
 
 Once you stop training, a forward pass is automatically run on the training data. The resulting files are saved in the `labeled_training_ouput/<training|validation|test>` subdirectories of your experiment directory. The files ending with `_output_0.tif` are images with lighter pixels having higher probabilities of being inside a cell. These are the files used for the rest of the pipeline.
 
-**Changing Network Architectures (Advanced Users):** you can use a network architecture different from the default (2+1)D network as follows:
+The (2+1)D network requires >16GB of RAM to train. If you do not have sufficient memory, the Docker image will crash with a minimal error message.  If you just want to make sure that the pipeline is set up properly, switch to the smaller `N1.znn` network architecture. 
+
+##### Postprocessing
+
+The postprocessing component of the pipeline converts the output of the convnet into ROI binary masks, as follows:
+
+1. Thresholding out pixels with low probability values
+2. Removing small connected components
+3. Weighting resulting pixels with a normalized distance transform ro favor pixels in the center of circular regions.
+4. Performing marker-based watershed labeling with local max markers
+5. Merging small watershed regions
+6. Applying the Cell Magic Wand tool to the preprocessed images at the centroids of the watershed regions. 
+
+You can run just the preprocessing component of the pipeline with the command `python pipeline.py postprocess <config file path>`. For the example experiment, this would be `python pipeline.py postprocess ../data/example/main_config.cfg`. 
+
+To optimize thresholding and minimum size values using the validation set, run the same command, but set
+
+1. The `do_gridsearch_postprocess_params` parameter in `main_config.cfg` to `1`. 
+2. The parameters in the `postprocessing optimization` section of `main_config.cfg` to custom grid search ranges and number of steps if desired.   
+
+This wil create a new file in your experiment directory with the best postprocessing parameters that will be used for forward passes as long as the `do_gridsearch_postprocess_params` parameter in `main_config.cfg` is set to `1`. 
+
+### Label new data
+
+Once a convnet is trained, labeling new data is simple:
+
+1. Place the TIFF files you wish to label in a new directory in your experiment folder. 
+2. Change the `data_dir` parameter in the `main_config.cfg` file of your experiment to point to the new directory
+3. Run `python pipeline.py complete <path to config>` (or all of the individual pipeline steps except training)
+
+## Changing Network Architectures
+
+You can use a different network architecture than the default (2+1)D network as follows:
 
 1. Create (or use an existing) `.znn` file in the `ConvnetCellDetection/celldetection_znn/` directory.  We have provided `.znn` files for the (2+1)D network (`2plus1d.znn`) and the 2D network (`2d.znn`) described in the [NIPS paper](#citing) and for a small one-level network for testing and debugging (`N1.znn`). The [ZNN documentation](http://znn-release.readthedocs.io/en/latest/index.html) describes the `.znn` format for defining a network architecture. 
 
-2. Replace all instances of "2plus1d" in the `main_config.cfg` file for your experiment with the name of the new `.znn` file. 
-
-**Note:** The (2+1)D network requires >16GB of RAM to train. If you do not have sufficient memory, the Docker image will crash with a minimal error message.  If you just want to make sure that the pipeline is set up properly, switch to `N1.znn`. 
-
-###### Postprocessing
-
-#### Label new data
+2. Replace all instances of "2plus1d" in the `main_config.cfg` file for your experiment with the name of the new `.znn` file.
 
 ## Detailed Parameter Configuration
 
-#### Custom Network Architecture
+
+
+ 
+
