@@ -67,7 +67,7 @@ https://www.continuum.io/downloads
   ```
   
 ###FIJI 
-  FIJI (FIJI Is Just ImageJ) is an image processing package. FIJI is *not* explicitly required for our pipeline, but it is the best way to view multipage TIFF videos and hand-label cells-of-interest.  
+  FIJI (FIJI Is Just ImageJ) is an image processing package. FIJI is *not* explicitly required for our pipeline, but it is the best way to view multipage TIFF videos and hand-label cells-of-interest for training.  
 
 Install Fiji using the links provided here:  
 http://imagej.net/Fiji/Downloads
@@ -95,9 +95,9 @@ For ease of inspection, the output of each intermediate step in the pipeline is 
 
 #### Prepare configuration file
 
-The `main_config.cfg` file in each experiment directory contains customizeable parameters.  This file defaults to the parameters used for training the (2+1)D network on the V1 dataset described in our [NIPS paper](#citing).
+The `main_config.cfg` file in each experiment directory contains customizeable parameters.  This file defaults to the parameters used for training the (2+1)D network on the V1 dataset described in our [NIPS paper](#citing).  Note that all relative filepaths in the config file are relative to the `src/` directory. 
 
-When you are ready to run a forward pass on new (non-labeled) data, you will need to change the first parameter (`data_dir`) to point to the directory containing this data (see [Label new data](#label-new-data)).
+The first parameter (`data_dir`) points to the subdirectory of your experiment containing the data you wish to process on the next run of the pipeline. The `data_dir` parameter for training should be a `labeled` directory (e.g. `../data/example/labeled`). When you are ready to run a forward pass on new (non-labeled) data, you will need to change this to point to a new subdirectory of your experiment (see [Label new data](#label-new-data)).
 
 Details about further customization using other parameters in the `main_config.cfg` file are provided in the [Detailed Parameter Configuration](#detailed-parameter-configuration) section.
 
@@ -118,26 +118,31 @@ The `data/example` directory contains an correctly set up example experiment you
 
 #### Run Convnet Cell Detection pipeline
 
-All components of the Convnet Cell Detection pipeline are acessed via the `pipeline.py` script.  You can choose to run the entire pipeline at once or execute each component individually. 
+The command `python pipeline.py complete <config file path>` will run the entire pipeline. For the example experiment, this would be `python pipeline.py complete ../data/example/main_config.cfg`. 
 
-The command `python pipeline.py complete` will run the entire pipeline, training a new convolutional network from your training data and scoring the result. You can then move directly to [labeling new data](#label-new-data) to use the trained convnet to detect cells in unlabeled images. 
+If the `data_dir` parameter of the `main_config.cfg` file points to a `labeled` directory, this command will train the convolutional network from your training data and score the result. You can then move directly to [labeling new data](#label-new-data) to use the trained convnet to detect cells in unlabeled images. 
 
-Each of the following sections describes a component of the pipeline in greater detail and provides instructions for executing it individually. 
+Each of the following sections describes a component of the pipeline in greater detail and provides instructions for executing it individually. This is useful if there is a problem and the script stops prematurely, if you wish to inspect the intermediate output of each pipeline step before moving on, or if you wish to re-run a particular step using different parameters.
 
 ###### Preprocessing
 
 The preprocessing component of the Convnet Cell Detection pipeline prepares supplied images for convnet training, as follows:
 
 1. Downsampling (*off by default*): The images stacks are average-pooled with default 167-frame strides and then max-pooled with default 6-frame strides. This downsampling reduces noise and makes the dataset into a more manageable size. *This step can be turned on by setting `do_downsample = 1` in the `[general]` section of the `main_config.cfg` file.*
-2. Time equalize: All image stacks are equalized to the same number of frames by averaging over sets of consecutive frames. This is necessary for 3-dimensional filters in the ZNN convolutional network implementation. 
+2. Time equalize: All image stacks are equalized to the same number of frames (default 50) by averaging over sets of consecutive frames. This is necessary for 3-dimensional filters in the ZNN convolutional network implementation. 
 3. Contrast improvement: Pixel values above the 99th percentile and below the 3rd percentile are clipped and the resulting values are normalized to [0,1].
 4. Convert cell labels to centroids: Our research indicates that convolutional networks do a better job distinguishing adjacent cells if the cell labels provided in the training data are reduced to a small centroid.  
 
-You can run just the preprocessing component of the pipeline by running `python pipeline.py preprocess`
+You can run just the preprocessing component of the pipeline with the command `python pipeline.py preprocess <config file path>`. For the example experiment, this would be `python pipeline.py preprocess ../data/example/main_config.cfg`. 
 
 ###### Train convolutional network
 
-The training component of the pipeline
+The training component of the pipeline trains a convnet using ZNN in a Docker image. You can run just the training component of the pipeline with the command `python pipeline.py train <config file path>`. For the example experiment, this would be `python pipeline.py train ../data/example/main_config.cfg`. 
+
+This command will start a docker image and begin ZNN training. It will print the training iteration and the current pixel error periodically. The trained network is automatically saved every 1000 iterations.  You can press `ctrl-c` to stop training at any time. If you re-run the training command, it will resume training at the last saved iteration. If you wish to restart training, you will need to delete the saved `.h5` files in the `labeled_training_output` directory. 
+
+If you are running the pipeline on a server, we suggest you use a session manager such as `tmux` to ensure that your training is not interrupted if your connection to the server is lost.  
+
 
 ###### Postprocessing
 
