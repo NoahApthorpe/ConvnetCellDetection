@@ -32,19 +32,13 @@ Convolutional networks are a supervised learning technique, meaning that they ne
 
 Once you have trained a convolutional network, you can use it to quickly detect cells in all new images from the same or similar experimental procedure. The Convnet Cell Detection tool has a straightforward command-line and configuration file interface to make this as easy as possible. 
 
-The Convnet Cell Detection tool uses the ZNN convolutional network implementation ([https://github.com/seung-lab/znn-release](https://github.com/seung-lab/znn-release)).  While you do not need to understand ZNN in order to use this tool, advanced users may wish to read the [ZNN documentation](http://znn-release.readthedocs.io/en/latest/index.html) to understand some intermediate files created by the Convnet Cell Detection pipeline. 
+The Convnet Cell Detection tool uses the ZNN convolutional network implementation ([https://github.com/seung-lab/znn-release](https://github.com/seung-lab/znn-release)).  While you do not need to understand ZNN in order to use this tool, advanced users may wish to read the [ZNN documentation](http://znn-release.readthedocs.io/en/latest/index.html) in order to create new network architectures and understand some intermediate files created by the Convnet Cell Detection pipeline.
 
 ## Installation
-The Convnet Cell Detection pipeline relies on a number of software packages, all of which (except for MATLAB) are free and open source. Please follow the instructions below to install each package. 
-
-###MATLAB (ver R2015b)
-  The initial image preprocessing steps of the pipeline rely on MATLAB. We have only tested the pipeline using MATLAB version R2015b, however more recent versions are likely to work as well.  
-  
-To download MATLAB R2015b, follow the instructions here:   
- https://www.mathworks.com/matlabcentral/answers/99265-how-do-i-download-an-older-version-of-matlab
+The Convnet Cell Detection pipeline relies on a number of software packages, all of which are free and open source. Please follow the instructions below to install each package. 
 
 ###Python 2.7 and related modules
-  The majority of the pipeline is based on code written in Python. The Anaconda platform is a convenient tool for installing and maintaining Python modules and environments.  
+The majority of the pipeline is based on code written in Python. The Anaconda platform is a convenient tool for installing and maintaining Python modules and environments.  
 
 Download the Anaconda platform appropriate for your operating system here:  
 https://www.continuum.io/downloads
@@ -71,29 +65,41 @@ https://www.continuum.io/downloads
   ```
   docker pull jpwu/znn:v0.1.4
   ```
+  
 ###FIJI 
-  FIJI (FIJI Is Just ImageJ) is an image processing package. Our pipeline uses it to preprocess data images and postprocess the output of the convnets. 
+  FIJI (FIJI Is Just ImageJ) is an image processing package. FIJI is *not* explicitly required for our pipeline, but it is the best way to view multipage TIFF videos and hand-label cells-of-interest.  
 
 Install Fiji using the links provided here:  
 http://imagej.net/Fiji/Downloads
 
 
 #####You are now ready to use the convnet cell detection pipeline. 
+
 ## General Use
 
 The following sections will walk through the process of setting up and using the Convnet Cell Detection tool with default settings.  
 
-All `python` commands must either be run from the `src` directory or have `src/` appended to the name of the `.py` file. 
+The primary interface to the pipeline is via the `pipeline.py` script, which takes 2 command line arguments. The first argument is the step of the pipeline you wish to run. The options are `create`, `complete`, `preprocess`, `train`, `forward`, `postprocess`, and `score`. The second argument is either a new experiment name or a path to a configuration file. Each pipeline step will be explained below. 
+
+All `python` commands must be run from the `src` directory of the `ConvnetCellDetection` repository to ensure corrent relative file paths. 
 
 #### Set up new experiment
 
-Run `python create_experiment_dir.py <experiment_name>` to create a new folder in the `data` directory for your experiment. This folder will be pre-initialized with a `main_config.cfg` configuration file and a `labeled` directory to hold pre-labeled training, valdiation, and testing data.
+Run `python pipeline.py <experiment_name>` to create a new folder in the `data` directory for your experiment. This folder will be pre-initialized with a `main_config.cfg` configuration file and a `labeled` directory to hold pre-labeled training, valdiation, and testing data.
+
+Each "experiment" directory in `data/` corresponds to a single convnet. Once the convnet is trained, you can use it to label as much new data as you wish (see [Label new data](#label-new-data))
+
+The `labeled` directory and it's `training/validation/test` subdirectories are specifically for labeled data and are detected by name in the Python scripts.  Do not re-name these directories.
+
+For ease of inspection, the output of each intermediate step in the pipeline is saved in a unique directory (e.g. `labeled_preprocessed` and `labeled_training_output`).  Do not re-name these directories as they are detected by name in the Python scripts. 
 
 #### Prepare configuration file
 
-You will next need to make one change to the `main_config.cfg` configuration file in your experiment directory.  This is the minimum necessary for the Convnet Cell Detection tool to work on your system. Details about further customization using other parameters in the `main_config.cfg` file are provided in the [Detailed Parameter Configuration](#detailed-parameter-configuration) section.
+The `main_config.cfg` file in each experiment directory contains customizeable parameters.  This file defaults to the parameters used for training the (2+1)D network on the V1 dataset described in our [NIPS paper](#citing).
 
-1. Change the `matlab_path` parameter in the `general` section to point to your system's matlab installation.  The default setting is for a Mac OSX system with Matlab R2015b.
+When you are ready to run a forward pass on new (non-labeled) data, you will need to change the first parameter (`data_dir`) to point to the directory containing this data (see [Label new data](#label-new-data)).
+
+Details about further customization using other parameters in the `main_config.cfg` file are provided in the [Detailed Parameter Configuration](#detailed-parameter-configuration) section.
 
 #### Provide training data
 
