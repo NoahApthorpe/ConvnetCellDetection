@@ -139,10 +139,17 @@ You can run just the preprocessing component of the pipeline with the command `p
 
 The training component of the pipeline trains a convnet using ZNN in a Docker image. You can run just the training component of the pipeline with the command `python pipeline.py train <config file path>`. For the example experiment, this would be `python pipeline.py train ../data/example/main_config.cfg`. 
 
-This command will start a docker image and begin ZNN training. It will print the training iteration and the current pixel error periodically. The trained network is automatically saved every 1000 iterations.  You can press `ctrl-c` to stop training at any time. If you re-run the training command, it will resume training at the last saved iteration. If you wish to restart training, you will need to delete the saved `.h5` files in the `labeled_training_output` directory. 
+This command will start a docker image and begin ZNN training. It will print the training iteration and the current pixel error periodically. The trained network is automatically saved every 1000 iterations.  Training will continue until you press `ctrl-c`. If you re-run the training command, it will resume training at the last saved iteration. If you wish to restart training, you will need to delete the saved `.h5` files in the `labeled_training_output` directory. If you are running the pipeline on a server, we suggest you use a session manager such as `tmux` to ensure that training is not interrupted if your connection to the server is lost.  
 
-If you are running the pipeline on a server, we suggest you use a session manager such as `tmux` to ensure that your training is not interrupted if your connection to the server is lost.  
+Once you stop training, a forward pass is automatically run on the training data. The resulting files are saved in the `labeled_training_ouput/<training|validation|test>` subdirectories of your experiment directory. The files ending with `_output_0.tif` are images with lighter pixels having higher probabilities of being inside a cell. These are the files used for the rest of the pipeline.
 
+**Changing Network Architectures (Advanced Users):** you can use a network architecture different from the default (2+1)D network as follows:
+
+1. Create (or use an existing) `.znn` file in the `ConvnetCellDetection/celldetection_znn/` directory.  We have provided `.znn` files for the (2+1)D network (`2plus1d.znn`) and the 2D network (`2d.znn`) described in the [NIPS paper](#citing) and for a small one-level network for testing and debugging (`N1.znn`). The [ZNN documentation](http://znn-release.readthedocs.io/en/latest/index.html) describes the `.znn` format for defining a network architecture. 
+
+2. Replace all instances of "2plus1d" in the `main_config.cfg` file for your experiment with the name of the new `.znn` file. 
+
+**Note:** The (2+1)D network requires >16GB of RAM to train. If you do not have sufficient memory, the Docker image will crash with a minimal error message.  If you just want to make sure that the pipeline is set up properly, switch to `N1.znn`. 
 
 ###### Postprocessing
 
