@@ -1,6 +1,21 @@
 # Convnet Cell Detection
 Automatic cell detection in microscopy data using convolutional networks
 
+
+## Documentation Contents
+- [Contributors](#contributors)
+- [Citing](#citing)
+- [Overview](#overview)
+- [Installation](#installation)
+- [General Use](#general-use)
+  - [Set up new experiment](#set-up-new-experiment)
+  - [Prepare configuration file](#prepare-configuration-file)
+  - [Provide training data](#provide-training-data)
+  - [Run Convnet Cell Detection pipeline](#run-convnet-cell-detection-pipeline)
+  - [Label new data](#label-new-data)
+- [Changing Network Architectures](#changing-network-architectures) (Advanced Users)
+- [Parameter Descriptions](#parameter-descriptions) (Advanced Users)
+
 ## Contributors
 - Noah Apthorpe (apthorpe@princeton.edu)
 - Alex Riordan (ariordan@princeton.edu)
@@ -11,18 +26,6 @@ Please feel free to send us emails with questions, comments, or bug-reports.  In
 We encourage the use of this tool for research and are excited to see Convnet Cell Detection being applied to experimental workflows.  
 If you publish the results of research using this tool or any of the code contained in this repository, we ask that you cite the following paper:
 -  N. Apthorpe, et al. "Automatic cell detection in microscopy data using convolutional networks." *Advances in Neural Information Processing Systems.* 2016. 
-
-## Documentation Contents
-- [Overview](#overview)
-- [Installation](#installation)
-- [General Use](#general-use)
-  - [Set up new experiment](#set-up-new-experiment)
-  - [Prepare configuration file](#prepare-configuration-file)
-  - [Provide training data](#provide-training-data)
-  - [Run Convnet Cell Detection pipeline](#run-convnet-cell-detection-pipeline)
-  - [Label new data](#label-new-data)
-- [Changing Network Architectures](#changing-network-architectures) (Advanced Users)
-- [Detailed Parameter Descriptions](#detailed-parameter-descriptions) (Advanced Users)
 
 ## Overview
 Convnet Cell Detection is a data processing pipeline for automatically detecting cells in microscope images using convolutional neural networks (convnets).  We developed and tested this pipeline to find neuron cell bodies in two-photon microscope images, but believe that the technique will be be effective for other cellular microscopy applications as well. 
@@ -182,74 +185,64 @@ You can use a different network architecture than the default (2+1)D network as 
 
 2. Replace all instances of "2plus1d" in the `main_config.cfg` file for your experiment with the name of the new `.znn` file.
 
-## Detailed Parameter Descriptions
+##  Parameter Descriptions
 
-The `main_config.cfg` configuration file contains many parameters that will not need to be changed for general use. However, advanced users may wish to adjust these parameters for particular use cases. The following are 
+The `main_config.cfg` configuration file contains many parameters that will not need to be changed for general use. However, advanced users may wish to adjust these parameters for particular use cases. The default values are stored in the template `main_config.cfg` in the `src/` directory.  Please [contact us](#contributors) if you have specific questions about these parameters or other aspects of the ConvnetCellDetection pipeline. 
 
 general
 
-- data_dir = ../data/v1/labeled
-- img_width = 512
-- img_height = 512
-- do_downsample = 0
-- do_gridsearch_postprocess_params = 0
+- data_dir = location of video files (and ROIs for training) relative to `src/` directory 
+- img_width = image width in pixels
+- img_height = image height in pixels (note that img_width != img_height has not been well tested) 
+- do_downsample = [0 or 1] whether to downsample using mean projection followed by max projection
+- do_gridsearch_postprocess_params = [0 or 1] whether to optimize (if data dir is `../data/<experiment>/labeled`) or use optimized postprocessing parameters (if forward pass)
 
 preprocessing
 
-- time_equalize = 50
-- mean_proj_bin = 167
-- max_proj_bin = 6
-- upper_contrast = 99
-- lower_contrast = 3
-- centroid_radius = 4
+- time_equalize = number of frames to equalize each video to for 3D kernels/projection
+- mean_proj_bin = number of consecutive frames to mean project during downsampling
+- max_proj_bin = number of consecutive frames to max project during downsampling
+- upper_contrast = upper percentile cutoff for preprocessing contrast improvement
+- lower_contrast = lower percentile cutoff for preprocessing contrast improvement
+- centroid_radius = radius of ROI centroids used for training
 
 network
 
-- net_arch_fpath = /Users/noahapthorpe/Documents/Research/ConvnetCellDetection/ConvnetCellDetection/celldetection_znn/2plus1d.znn
-- filter_size = 10
-- field_of_view = 36
-- is_squashing = yes
+- net_arch_fpath = absolute path of network architecture `.znn` file
+- filter_size = size of one side of square convnet filters (pixels)
+- field_of_view = size of one side of square network field of view for calculating omitted border around each video (pixels)
+- is_squashing = "yes" for (2+1)D or other network that takes 3D input, "no" otherwise.
 
 training
 
-- learning_rate = .005
-- momentum = .9
-- max_iter = 100000
-- num_iter_per_save = 1000
-- patch_size = 1,120,120
-- training_input_dir = ../data/v1/labeled_preprocessed
-- training_output_dir = ../data/v1/labeled_training_output
-- training_net_prefix = ../data/v1/labeled_training_output/2plus1d
+- learning_rate = learning rate of convnet training
+- momentum = momentum of convnet training
+- max_iter = maximum iterations of convnet training
+- num_iter_per_save = number of iterations between each automatic save of convnet during training
+- patch_size = patch size for convnet training (pixels,pixels,pixels)
+- training_input_dir = location of preprocessed labeled data for training (relative to `src/` directory)
+- training_output_dir = location of training convnet output (relative to `src/` directory)
+- training_net_prefix = location and prefix for saving trained networks (relative to `src/` directory)
 
 forward
 
-- forward_outsz = 1,220,220
-- forward_net = ../data/v1/labeled_training_output/2plus1d_current.h5
+- forward_outsz = patch size for convnet forward pass (pixels,pixels,pixels)
+- forward_net = location of saved `.h5` network file to use for forward pass (relative to the `src/` directory) 
 
 docker
 
-- container_id = foo
-- memory = 4096
-- container_name = conv_net_test
+- memory = memory to allocate to the docker virtual machine
+- container_name = name of docker container with ZNN
 
 postprocessing
 
-- probability_threshold = 0.83
-- min_size_watershed = 60
-- merge_size_watershed = 60
-- max_footprint = 7,7
-- min_size_wand = 10
-- max_size_wand = 22
+- probability_threshold = only pixels with probability values above this threshold are included
+- min_size_watershed = connected units with fewer than this many nonzero pixels are removed
+- merge_size_watershed = watersheds with fewer than this many pixels are merged
+- max_footprint = footprint size of local max operation performed to find watershed centers
+- min_size_wand = minimum radius of ROIs labeled by cell magic wand and output by pipeline
+- max_size_wand = maximum radius of ROIs labeled by cell magic wand and output by pipeline
 
-postprocessing optimization
+postprocessing optimization 
 
-- min_threshold = 0.8
-- max_threshold = 0.95
-- steps_threshold = 4
-- min_minsize = 20
-- max_minsize = 100
-- steps_minsize = 5
-- min_footprint = 7
-- max_footprint = 7
-- steps_footprint = 1
-- steps_wand = 1
+- ranges and step sizes for grid search optimization of postprocessing parameter values above
