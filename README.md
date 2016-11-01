@@ -102,6 +102,8 @@ The `labeled` directory and it's `training/validation/test` subdirectories are s
 
 For ease of inspection, the output of each intermediate step in the pipeline is saved in a unique directory (e.g. `labeled_preprocessed` and `labeled_training_output`).  Do not re-name these directories as they are detected by name in the Python scripts. 
 
+The `data/example` directory contains an correctly set up example experiment you can use for comparing file types and naming conventions. You will need to change the `net_arch_fpath` parameter in `data/example/main_config.cfg` to the absolute path in your filesystem in order to be able to run the pipeline on the example experiment. 
+
 ### Prepare configuration file
 
 The `main_config.cfg` file in each experiment directory contains customizeable parameters.  This file defaults to the parameters used for training the (2+1)D network on the V1 dataset described in our [NIPS paper](#citing).  Note that all relative filepaths in the config file are relative to the `src/` directory. 
@@ -121,9 +123,7 @@ Training data should have the following format:
 - Labels should be in ImageJ/Fiji ROI format with one `.zip` zipped folder containing individual `.roi` files per image sequence.
 - Each image sequence  should have the same name as its corresponding zipped ROI folder, e.g. V1_09_2016.tiff and V1_09_2016.zip.  There are no restictions on the names themselves, and the names will be preserved throughout the Convnet Cell Detection Pipeline.
 
-Training images and labels should be divided into 3 sets, 1) `training`, 2) `validation`, and 3) `test`, and placed in the corresponding folders in the `data/<experiment_name>/labeled/` directory. The `training` data is used to train the convolutional network.  The `validation` data is used to optimize various postprocessing parameters. The `test` data is used to evaluate the accuracy of the trained network.  We recommend an 60%/20%/20% training/validation/test split if you have lots of labeled data and a 80%/10%/10% split otherwise. 
-
-The `data/example` directory contains an correctly set up example experiment you can use for comparing file types and naming conventions. 
+Training images and labels should be divided into 3 sets, 1) `training`, 2) `validation`, and 3) `test`, and placed in the corresponding folders in the `data/<experiment_name>/labeled/` directory. The `training` data is used to train the convolutional network.  The `validation` data is used to optimize various postprocessing parameters. The `test` data is used to evaluate the accuracy of the trained network.  We recommend an 60%/20%/20% training/validation/test split if you have lots of labeled data and a 80%/10%/10% split otherwise.  
 
 ### Run Convnet Cell Detection pipeline
 
