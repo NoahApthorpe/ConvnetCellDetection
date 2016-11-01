@@ -34,7 +34,7 @@ def is_training(main_config_fpath):
     with open(main_config_fpath, 'r') as config_file:
         cfg_parser = ConfigParser.SafeConfigParser()
         cfg_parser.readfp(config_file)
-        data_dir = cfg_parser.get('general', 'data_dir')
+        data_dir = preprocess.add_pathsep(cfg_parser.get('general', 'data_dir'))
         if preprocess.is_labeled(data_dir):
             return True
         return False
