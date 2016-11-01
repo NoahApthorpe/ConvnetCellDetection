@@ -12,7 +12,13 @@ Automatic cell detection in microscopy data using convolutional networks
   - [Prepare configuration file](#prepare-configuration-file)
   - [Provide training data](#provide-training-data)
   - [Run Convnet Cell Detection pipeline](#run-convnet-cell-detection-pipeline)
+    - [Preprocessing](#preprocessing)
+    - [Training](#train-convolutional-network)
+    - [Postprocessing](#postprocessing)
   - [Label new data](#label-new-data)
+  - [Output Format](#output-format)
+  - [Scoring](#scoring)
+  - [Visualization & Manual Thresholding](#visualization-and-manual-thresholding) (Optional)
 - [Changing Network Architectures](#changing-network-architectures) (Advanced Users)
 - [Parameter Descriptions](#parameter-descriptions) (Advanced Users)
 
@@ -23,8 +29,7 @@ Automatic cell detection in microscopy data using convolutional networks
 Please feel free to send us emails with questions, comments, or bug-reports.  Include "Convnet Cell Detection" in the subject.
 
 ## Citing
-We encourage the use of this tool for research and are excited to see Convnet Cell Detection being applied to experimental workflows.  
-If you publish the results of research using this tool or any of the code contained in this repository, we ask that you cite the following paper:
+We encourage the use of this tool for research and are excited to see Convnet Cell Detection being applied to experimental workflows. If you publish the results of research using this tool or any of the code contained in this repository, we ask that you cite the following paper:
 -  N. Apthorpe, et al. "Automatic cell detection in microscopy data using convolutional networks." *Advances in Neural Information Processing Systems.* 2016. 
 
 ## Overview
@@ -143,7 +148,7 @@ You can run just the preprocessing component of the pipeline with the command `p
 
 The training component of the pipeline trains a convnet using ZNN in a Docker virtual machine. You can run just the training component of the pipeline with the command `python pipeline.py train <config file path>`. For the example experiment, this would be `python pipeline.py train ../data/example/main_config.cfg`. 
 
-This command will start a docker image and begin ZNN training. It will print the training iteration and the current pixel error periodically. The trained network is automatically saved every 1000 iterations.  Training will continue until you press `ctrl-c`. If you re-run the training command, it will resume training at the last saved iteration. If you wish to restart training, you will need to delete the saved `.h5` files in the `labeled_training_output` directory. If you are running the pipeline on a server, we suggest you use a session manager such as `tmux` to ensure that training is not interrupted if your connection to the server is lost.  
+This command will start a docker image and begin ZNN training. It will print the training iteration and the current pixel error periodically. The trained network is automatically saved every 1000 iterations.  Training will continue until you press `ctrl-c` or it reaches the value of the `max_iter` parameter of the configuration file. If you re-run the training command, it will resume training at the last saved iteration. If you wish to restart training, you will need to delete the saved `.h5` files in the `labeled_training_output` directory. If you are running the pipeline on a server, we suggest you use a session manager such as `tmux` to ensure that training is not interrupted if your connection to the server is lost.  
 
 Once you stop training, a forward pass is automatically run on the training data. The resulting files are saved in the `labeled_training_ouput/<training|validation|test>` subdirectories of your experiment directory. The files ending with `_output_0.tif` are images with lighter pixels having higher probabilities of being inside a cell. These are the files used for the rest of the pipeline.
 
@@ -176,6 +181,29 @@ Once a convnet is trained, labeling new data is simple:
 1. Place the TIFF files you wish to label in a new directory in your experiment folder. 
 2. Change the `data_dir` parameter in the `main_config.cfg` file of your experiment to point to the new directory
 3. Run `python pipeline.py complete <path to config>` (or all of the individual pipeline steps except training)
+
+### Output Format
+
+The postprocessing step of the pipeline saves automatically detected ROIs in two formats:
+
+1. A compressed Numpy .npz file containing two saved arrays:
+   1. The ROIs as binary masks. The code `rois = numpy.load('<name>.npz')['rois']` (one line) will load the ROIs into a 3D Numpy array with dimensions (ROI #, binary mask width, binary mask height). The code `matplotlib.pyplot.imshow(rois[0], cmap='gray')` will plot a single ROI. The code `matplotlib.pyplot.imshow(rois.max(axis=0), cmap='gray')` will plot all ROIs on a single image.  
+   2. The average probability assigned by the convolutional network to the pixels inside each ROI. The code `roi_probs = numpy.load('<name>.npz')['roi_probabilities']` will load these probabilties as a 1D Numpy array with indices corresponding to the 3D ROI array in the same file. These probabilities can be used as a heuristic to rank detected ROIs in order of confidence if desired. 
+2. A 2D TIFF binary mask with white pixels inside detected ROIs
+
+### Scoring
+
+The scoring step of the pipeline assigns precision, recall, and F1 (harmonic mean of precision and recall) scores to the training, validation, and test sets. This step can only be run on labeled data (because a "ground-truth" is needed for scoring). The scores are output as `.txt` files in  `labeled_postprocessed/<training|validation|test>` directories of your experiment. The most important scores are `total_f1_score`, `total_precision`, and `total_recall`.  The scores are also broken down into arrays of per-image-series scores.
+
+You can run just the scoring component of the pipeline with the command `python pipeline.py score <config file path>`. For the example experiment, this would be `python pipeline.py score ../data/example/main_config.cfg`. 
+
+### Visualization and Manual Thresholding
+
+We received several requests while beta-testing for an easy method of viewing and manually thresholding ROIs by convnet detection confidence. The command `python visualize.py <config file path>` will open a simple GUI for this purpose. 
+
+ConvnetCellDetection is meant to be a completely automatic pipeline, and using the GUI to manually threshold ROIs is **entirely optional**. Most importantly, the GUI provides an easy way to view the results of ConvnetCellDetection without needing to import ROI binary masks into FIJI. 
+
+The GUI overlays convnet-detected ROIs in blue over the original preprocessed image stack.  The slider to the right of the image allows you to add and remove ROIs in order of average probability assigned by the convolutional network to the pixels inside each ROI. The slider beneath the image allows you to move through frames of the image stack. You can move between image stacks with the "Next Image" and "Previous Image" buttons and enter a manual probability threshold value for all images in the "set threshold value:" box.  The "Save Displayed ROIs" button will create a new .npz file in the same directory as the original with a "\_MANUAL" label containing only the displayed ROIs. This file can be read with the code `rois = numpy.load('<name>_MANUAL.npz')['rois']`.  The "Show/Hide Ground Truth Labels" button overlays human labels in red if they exist for the current image. 
 
 ## Changing Network Architectures
 
