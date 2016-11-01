@@ -94,8 +94,8 @@ class App:
         self.image_slider.set(0)
         self.image_index = 0
         
-        self.convnet_rois = np.load(current_files[1])['arr_0']
-        self.convnet_roi_probs = np.load(current_files[1])['arr_1']
+        self.convnet_rois = np.load(current_files[1])['rois']
+        self.convnet_roi_probs = np.load(current_files[1])['roi_probabilities']
         self.indexed_roi_probs = sorted([(v,i) for i,v in enumerate(self.convnet_roi_probs)], reverse=True)
         assert(self.convnet_rois.shape[0] == self.convnet_roi_probs.shape[0])
         self.roi_slider.config(from_=self.convnet_rois.shape[0])
