@@ -47,9 +47,11 @@ def forward_pass(output_dir):
     return cmd
 
 
-def remove_znn_container(container_name, machine_name):
+def remove_znn_container(container_name, machine_name, stop_machine):
     cmd = ''
-    cmd += '; docker stop ' + container_name + '; docker rm ' + container_name + '; docker-machine stop ' + machine_name
+    cmd += '; docker stop ' + container_name + '; docker rm ' + container_name + '; '
+    if stop_machine:
+        cmd += 'docker-machine stop ' + machine_name
     return cmd
 
 
@@ -70,6 +72,7 @@ def main(main_config_fpath='../data/example/main_config.cfg', run_type='forward'
     cfg_parser = ConfigParser.SafeConfigParser()
     cfg_parser.readfp(open(main_config_fpath, 'r'))
     memory = cfg_parser.get('docker', 'memory')
+    use_docker_machine = cfg_parser.getboolean('docker', 'use_docker_machine')
     container_name = cfg_parser.get('docker', 'container_name')
     machine_name_prefix = cfg_parser.get('docker', 'machine_name')
     machine_name = machine_name_prefix + "-" + memory.strip()
@@ -81,16 +84,17 @@ def main(main_config_fpath='../data/example/main_config.cfg', run_type='forward'
     print dir_to_mount
 
     cmd = ''
-    cmd += start_docker_machine(memory, machine_name)
-    cmd += '; '
+    if use_docker_machine:
+        cmd += start_docker_machine(memory, machine_name)
+        cmd += '; '
     cmd += start_znn_container(dir_to_mount, container_name)
 
     if run_type == 'training':
-        cmd += train_network(training_output_dir) + remove_znn_container(container_name, machine_name)
+        cmd += train_network(training_output_dir) + remove_znn_container(container_name, machine_name, use_docker_machine)
     elif run_type == 'forward':
-        cmd += forward_pass(forward_output_dir) + remove_znn_container(container_name, machine_name)
+        cmd += forward_pass(forward_output_dir) + remove_znn_container(container_name, machine_name, use_docker_machine)
     else:
-        cmd += remove_znn_container(container_name)
+        cmd += remove_znn_container(container_name, machine_name, use_docker_machine)
         raise ValueError('run_type variable should be one of "forward" or "training"', run_type)
 
     print cmd
