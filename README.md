@@ -152,8 +152,6 @@ This command will start a docker image and begin ZNN training. It will print the
 
 Once you stop training, a forward pass is automatically run on the training data. The resulting files are saved in the `labeled_training_ouput/<training|validation|test>` subdirectories of your experiment directory. The files ending with `_output_0.tif` are images with lighter pixels having higher probabilities of being inside a cell. These are the files used for the rest of the pipeline.
 
-The (2+1)D network requires >16GB of RAM to train. If you do not have sufficient memory, the Docker image will crash with a minimal error message.  If you just want to make sure that the pipeline is set up properly, switch to the smaller `N1.znn` network architecture. 
-
 ##### Postprocessing
 
 The postprocessing component of the pipeline converts the output of the convnet into ROI binary masks, as follows:
@@ -259,7 +257,8 @@ forward
 
 docker
 
-- memory = memory to allocate to the docker virtual machine
+- memory = memory (in MB) to allocate to the docker virtual machine. Changing this will create a new docker virtual machine and take longer on the first training or forward pass with the updated memory value
+- machine_name = prefix of docker virtual machine -- the complete name is machine_name + '-' + memory
 - container_name = name of docker container with ZNN
 
 postprocessing
