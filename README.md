@@ -64,9 +64,9 @@ https://www.continuum.io/downloads
 	
   To check that Docker is working, run the following commands in a terminal window:
   ```
-  docker-machine create -d virtualbox --virtualbox-memory 4096 default
-  docker-machine start default
-  eval $(docker-machine env) #configure shell
+  docker-machine create -d virtualbox --virtualbox-memory 4096 convnet-cell-detection-4096
+  docker-machine start convnet-cell-detection-4096
+  eval $(docker-machine env convnet-cell-detection-4096) #configure shell
   docker run hello-world #check that everything is running properly
   ```
   
