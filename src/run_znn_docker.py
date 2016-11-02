@@ -16,12 +16,12 @@ from create_znn_files import dockerize_path
 from preprocess import remove_ds_store, add_pathsep
 
 
-def start_docker_machine(memory):
+def start_docker_machine(memory, machine_name):
     '''Input: memory allocates memory (in MB) to docker-machine'''
     cmd = ''
-    cmd += 'docker-machine create -d virtualbox --virtualbox-memory ' + memory + ' default; '
-    cmd += 'docker-machine start default; '  # TODO: make default a randomly-generated name
-    cmd += 'eval $(docker-machine env)'
+    cmd += 'docker-machine create -d virtualbox --virtualbox-memory ' + memory + ' ' + machine_name + '; ' 
+    cmd += 'docker-machine start ' + machine_name + '; ' 
+    cmd += 'eval $(docker-machine env ' + machine_name + ')' 
     # cmd += ' ;docker run hello-world' #for testing
     return cmd
 
@@ -47,10 +47,9 @@ def forward_pass(output_dir):
     return cmd
 
 
-def remove_znn_container(container_name):
+def remove_znn_container(container_name, machine_name):
     cmd = ''
-    cmd += '; docker stop ' + container_name + '; docker rm ' + container_name + '; docker-machine stop'
-    # TODO: change default docker machine to user-given name
+    cmd += '; docker stop ' + container_name + '; docker rm ' + container_name + '; docker-machine stop ' + machine_name
     return cmd
 
 
@@ -72,6 +71,8 @@ def main(main_config_fpath='../data/example/main_config.cfg', run_type='forward'
     cfg_parser.readfp(open(main_config_fpath, 'r'))
     memory = cfg_parser.get('docker', 'memory')
     container_name = cfg_parser.get('docker', 'container_name')
+    machine_name_prefix = cfg_parser.get('docker', 'machine_name')
+    machine_name = machine_name_prefix + "-" + memory.strip()
     training_output_dir = add_pathsep(cfg_parser.get('training', 'training_output_dir'))
     data_dir = add_pathsep(cfg_parser.get('general', 'data_dir'))[0:-1]
     forward_output_dir = add_pathsep(data_dir + "_training_output")
@@ -80,14 +81,14 @@ def main(main_config_fpath='../data/example/main_config.cfg', run_type='forward'
     print dir_to_mount
 
     cmd = ''
-    cmd += start_docker_machine(memory)
+    cmd += start_docker_machine(memory, machine_name)
     cmd += '; '
     cmd += start_znn_container(dir_to_mount, container_name)
 
     if run_type == 'training':
-        cmd += train_network(training_output_dir) + remove_znn_container(container_name)
+        cmd += train_network(training_output_dir) + remove_znn_container(container_name, machine_name)
     elif run_type == 'forward':
-        cmd += forward_pass(forward_output_dir) + remove_znn_container(container_name)
+        cmd += forward_pass(forward_output_dir) + remove_znn_container(container_name, machine_name)
     else:
         cmd += remove_znn_container(container_name)
         raise ValueError('run_type variable should be one of "forward" or "training"', run_type)

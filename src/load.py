@@ -54,9 +54,9 @@ def load_data(directory, img_width, img_height, rois_only=False, no_rois=False):
             rois.append(load_rois(roi_name, img_width, img_height))
             #data.append((load_stack(stack_name), load_rois(roi_name, img_width, img_height)))
     if rois_only:
-        return stks, list(file_names)
-    elif no_rois:
         return rois, list(file_names)
+    elif no_rois:
+        return stks, list(file_names)
     else:
         return stks, rois, list(file_names) 
     #return data, list(file_names)
