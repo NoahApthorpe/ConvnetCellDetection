@@ -17,7 +17,6 @@
 ################################################################
 
 
-import matplotlib.pyplot as plt
 import numpy as np
 from itertools import chain
 import random
@@ -27,6 +26,7 @@ import os.path
 import load
 from preprocess import is_labeled, add_pathsep
 import ConfigParser
+
 
 class Score:
     """Class to calculate and store score.
@@ -83,17 +83,6 @@ class Score:
         string += "Overlap Boundary Quality, per stack  = {!s}\n\n".format(self.overlap_bqs)
         return string
     
-    def plot(self):
-        """Plot all data in Score"""
-        fig, ax = plt.subplots()
-        yvals = [self.total_f1_score, self.total_precision, self.total_recall, 
-                self.total_overlap_bq["mean precision"], self.total_overlap_bq["std precision"],
-                self.total_overlap_bq["mean recall"], self.total_overlap_bq["std recall"]]
-        xvals = np.arange(len(yvals))
-        plt.bar(xvals, yvals, width=0.6)
-        ax.set_xticks(xvals + 0.3)
-        ax.set_xticklabels(['F1 score', 'precision', 'recall', 'mbp', 'sbp', 'mbr', 'sbr'])
-        #plt.show()
         
 def categorize(predictions, labels):
     "Divide predictions and labels into FPs, FNs, and TPs"
@@ -173,42 +162,7 @@ def overlap_boundary_quality(categorized):
                "std recall": np.std(list(chain.from_iterable(recalls)))}
     return qualities, overall   
 
-def plot_multiple_scores(scores):
-    """Takes list of multiple scores and plots precision/recall curves
-    and f1 score comparisons.
-    """
-    f1_fig, ax = plt.subplots()
-    f1s = [s.total_f1_score for s in scores]
-    x = np.arange(len(f1s))
-    plt.bar(x, f1s, width=1)
-    ax.set_xticks(x + 0.5)
-    ax.set_xticklabels(map(str,x))
-    plt.ylabel('F1 score')
-    plt.xlabel('Algorithm Number')
     
-    pr_fig = plt.figure()
-    recalls = [s.total_recall for s in scores]
-    precisions = [s.total_precision for s in scores]
-    r, p, num = zip(*sorted(zip(recalls, precisions, np.arange(len(recalls)))))
-    plt.plot(r, p, '.-', markersize=10)
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    print "Score Number in order of increasing recall: " + str(num)
-    
-    pr_boundary_fig = plt.figure()
-    recalls = [s.total_overlap_bq["mean recall"] for s in scores]
-    precisions = [s.total_overlap_bq["mean precision"] for s in scores]
-    r_std = [s.total_overlap_bq["std recall"] for s in scores]
-    p_std = [s.total_overlap_bq["std precision"] for s in scores]
-    rm, pm, rs, ps, num = zip(*sorted(zip(recalls, precisions, r_std, p_std, np.arange(len(recalls)))))
-    plt.errorbar(rm, pm, xerr=rs, yerr=ps, fmt='.-',markersize=10)
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    print "Score number in order of increasing boundary recall: " + str(num)
-    
-    plt.show()
-    
-
 def score_labeled_data(postprocess_dir, data_dir, img_width, img_height):
     categories = ["training/", "validation/", "test/"]
     for c in categories:

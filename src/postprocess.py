@@ -17,12 +17,6 @@ from scipy import ndimage as ndi
 from skimage.morphology import watershed
 from skimage.feature import peak_local_max
 from skimage.morphology import remove_small_objects
-from skimage.measure import grid_points_in_poly
-import matplotlib.pyplot as plt
-from matplotlib.path import Path
-import matplotlib
-import matplotlib.patches as patches
-import subprocess
 import itertools
 import os
 import os.path
