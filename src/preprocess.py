@@ -200,8 +200,13 @@ def split_labeled_directory(split_dict, dir_to_split, is_ROI_tif, is_post_proces
     for fname, subdir in split_dict.items():
         for f in os.listdir(dir_to_split):
             if not os.path.isfile(dir_to_split + f): continue
-            base = os.path.splitext(fname)[0]
-            if base in f:
+            dict_base = os.path.splitext(fname)[0]
+            file_base = os.path.splitext(f)[0]
+            print dict_base
+            print file_base
+            if (dict_base == file_base or dict_base + "_ROI" == file_base or
+                dict_base + '_output' == file_base or dict_base + '_output_1' == file_base or
+                dict_base + '_output_0' == file_base):
                 os.rename(dir_to_split + f, dir_to_split + subdir + os.sep + f)
 
                 

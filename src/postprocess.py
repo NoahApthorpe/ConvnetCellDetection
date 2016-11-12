@@ -26,7 +26,7 @@ import tifffile
 from load import *
 from score import Score
 from preprocess import is_labeled, add_pathsep, get_labeled_split, split_labeled_directory
-from cell_magic_wand import cell_magic_wand
+from cell_magic_wand import cell_magic_wand, cell_magic_wand_single_point
 
 
 def read_network_output(directory):
@@ -101,20 +101,20 @@ def find_neuron_centers(im, threshold, min_size, merge_size, max_footprint=(7,7)
     return markers, labels
 
 
-def markers_to_seeds(markers, border):
+def markers_to_seeds(markers, border_0th, border_1th):
     '''converts watershed markers to seed points for magic wand'''
     centers = []
     for m in set(markers.flatten()):
         if m == 0: continue
         x,y = np.where(markers == m)
-        x = x[0] + border
-        y = y[0] + border
-        centers.append((y,x))
+        x = x[0] + border_0th
+        y = y[0] + border_1th
+        centers.append((x,y))
     return centers
 
 
 def postprocessing(preprocess_dir, network_output_dir, postprocess_dir, 
-                   border, threshold, min_size_watershed, merge_size_watershed, max_footprint, 
+                   threshold, min_size_watershed, merge_size_watershed, max_footprint, 
                    min_size_wand, max_size_wand):
     '''Performs postprocessing with argument parameters. Returns ROIs 
     and associated filenames'''
@@ -129,15 +129,15 @@ def postprocessing(preprocess_dir, network_output_dir, postprocess_dir,
     for i in range(len(network_images)):
         print "Running magic wand for " + filenames[i]
         size_diff_0th = preprocessed_images[i].shape[0] - network_images[i].shape[0]
-        size_diff_1th = preprocessed_images[i].shape[0] - network_images[i].shape[0]
+        size_diff_1th = preprocessed_images[i].shape[1] - network_images[i].shape[1]
         padded_network_image = np.pad(network_images[i], ((int(np.floor(size_diff_0th/2.0)), int(np.ceil(size_diff_0th/2.0))),
                                                           (int(np.floor(size_diff_1th/2.0)), int(np.ceil(size_diff_1th/2.0)))), 'constant')
-        seeds = markers_to_seeds(markers[i], border)
+        seeds = markers_to_seeds(markers[i], size_diff_0th/2, size_diff_1th/2)
         rois = []
         roi_probs = []
         for j,c in enumerate(seeds):
             print str(j) + "/" + str(len(seeds)-1)
-            roi = cell_magic_wand(preprocessed_images[i], c, min_size_wand, max_size_wand)
+            roi,_ = cell_magic_wand_single_point(preprocessed_images[i], c, min_size_wand, max_size_wand)
             roi_prob = np.sum(np.multiply(roi, padded_network_image))/np.sum(roi)
             rois.append(roi)
             roi_probs.append(roi_prob)
@@ -152,7 +152,7 @@ def postprocessing(preprocess_dir, network_output_dir, postprocess_dir,
 
 
 def parameter_optimization(data_dir, preprocess_dir, network_output_dir, postprocess_dir,
-                           border, min_size_wand, max_size_wand, img_width, img_height,
+                           min_size_wand, max_size_wand, img_width, img_height,
                            params_cfg_fn, cfg_parser):
     '''Performs grid search optimization of postprocessing parameters and stores result in
     new configuration file'''
@@ -187,7 +187,7 @@ def parameter_optimization(data_dir, preprocess_dir, network_output_dir, postpro
         merge_size_watershed = min_size_watershed
         print "Testing threshold: " + str(threshold) + " min_size_watershed: " + str(min_size_watershed) + " max_footprint: " + str(max_footprint) + " max_size_wand: " + str(max_size_wand)
         rois, roi_probs, filenames = postprocessing(preprocess_dir, network_output_dir,
-                                                    postprocess_dir, border, threshold, 
+                                                    postprocess_dir, threshold, 
                                                     min_size_watershed, merge_size_watershed,
                                                     (max_footprint,max_footprint),
                                                     min_size_wand, max_size_wand)
@@ -233,7 +233,7 @@ def main(main_config_fpath='../data/example/main_config.cfg'):
         if not os.path.isdir(postprocess_dir + ttv):
             os.makedirs(postprocess_dir + ttv)
 
-    # split training ouput directory if necessary
+    # split training output directory if necessary
     if is_labeled(data_dir):
         split_dict = get_labeled_split(data_dir)
         split_labeled_directory(split_dict, network_output_dir, False, False)
@@ -241,8 +241,6 @@ def main(main_config_fpath='../data/example/main_config.cfg'):
     # get non-optimized postprocessing parameters
     img_width = cfg_parser.getint('general','img_width')
     img_height = cfg_parser.getint('general', 'img_height')
-    field_of_view = cfg_parser.getint('network', 'field_of_view')
-    border = field_of_view/2
     do_gridsearch_postprocess_params = cfg_parser.getboolean('general', 'do_gridsearch_postprocess_params')
     min_size_wand = cfg_parser.getfloat('postprocessing', 'min_size_wand')
     max_size_wand = cfg_parser.getfloat('postprocessing', 'max_size_wand')
@@ -258,7 +256,7 @@ def main(main_config_fpath='../data/example/main_config.cfg'):
                                                    preprocess_dir + ttv_list[1],
                                                    network_output_dir + ttv_list[1],
                                                    postprocess_dir + ttv_list[1],
-                                                   border, min_size_wand,
+                                                   min_size_wand,
                                                    max_size_wand, img_width, img_height,
                                                    opt_params_cfg_fn, cfg_parser)
     else:
@@ -276,7 +274,7 @@ def main(main_config_fpath='../data/example/main_config.cfg'):
     # run postprocessing
     for ttv in ttv_list if is_labeled(data_dir) else ['']:
         final_rois, final_roi_probs, filenames = postprocessing(preprocess_dir + ttv, network_output_dir + ttv, 
-                                               postprocess_dir + ttv, border, threshold, 
+                                               postprocess_dir + ttv, threshold, 
                                                min_size_watershed, merge_size_watershed,
                                                max_footprint, min_size_wand, max_size_wand)
     
