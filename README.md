@@ -14,6 +14,7 @@ Automatic cell detection in microscopy data using convolutional networks
   - [Run Convnet Cell Detection pipeline](#run-convnet-cell-detection-pipeline)
     - [Preprocessing](#preprocessing)
     - [Training](#train-convolutional-network)
+    - [Forward Pass](#forward-pass)
     - [Postprocessing](#postprocessing)
   - [Label new data](#label-new-data)
   - [Output Format](#output-format)
@@ -44,29 +45,34 @@ Once you have trained a convolutional network, you can use it to quickly detect 
 The Convnet Cell Detection tool uses the ZNN convolutional network implementation ([https://github.com/seung-lab/znn-release](https://github.com/seung-lab/znn-release)).  While you do not need to understand ZNN in order to use this tool, advanced users may wish to read the [ZNN documentation](http://znn-release.readthedocs.io/en/latest/index.html) in order to create new network architectures and understand some intermediate files created by the Convnet Cell Detection pipeline.
 
 ## Installation
-The Convnet Cell Detection pipeline relies on a number of software packages, all of which are free and open source. Please follow the instructions below to install each package. 
 
-###Python 2.7 and related modules
-The majority of the pipeline is based on code written in Python. The Anaconda platform is a convenient tool for installing and maintaining Python modules and environments.  
+### Amazon AMI
+The easiest way to use the Convnet Cell Detection pipeline is with the Amazon EC2 AMI here.  We recommend launching the AMI in an EC2 instance with at least 16GB of RAM.  The ConvnetCellDetection repository is in the home directory of the AMI and all dependencies are pre-installed. We suggest you use a session manager such as `tmux` to ensure that training is not interrupted if your connection to the EC2 instance is lost.
 
-Download the Anaconda platform appropriate for your operating system here:  
+### Local Install
+The Convnet Cell Detection pipeline can also be installed and run on your computer or server. The pipeline relies on a number of software packages, all of which are free and open source. Please follow the instructions below to install each package. 
+
+####Python 2.7 and related modules
+The majority of the pipeline is based on code written in Python. The `requirements.txt` file in the `src/` directory of the ConvnetCellDetection repository lists all required Python libraries.  The bash commands `pip install numpy; pip install -r requirements.txt` (preferably in a Python [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/)) will install all requirements. 
+
+Alternatively, you can use the Anaconda platform for installing and maintaining Python modules and environments.  Download the Anaconda platform appropriate for your operating system here:  
 https://www.continuum.io/downloads
 	
-  We’ll need to use Anaconda to install some additional python modules. To do so, navigate to the following links and run the commands therein in a terminal window: 
-  - https://anaconda.org/anaconda/pil
-  - https://anaconda.org/anaconda/scikit-image
-  - https://anaconda.org/conda-forge/tifffile
+ You’ll need to use Anaconda to install some additional python modules. To do so, run these commands in a terminal window: 
+  - `conda install -c anaconda pil=1.1.7`
+  - `conda install -c anaconda scikit-image=0.12.3`
+  - `conda install -c conda-forge tifffile=0.9.0`
 
-###Docker
+####Docker
   Our pipeline uses the Docker platform to run ZNN's suite of convnet tools. Docker is used to create software containers that can be run on any machine or operating system. 
 
   Install the Docker engine for your operating system by following the instructions here: https://docs.docker.com/engine/installation/
 	
   To check that Docker is working, run the following commands in a terminal window:
   ```
-  docker-machine create -d virtualbox --virtualbox-memory 4096 convnet-cell-detection-4096
-  docker-machine start convnet-cell-detection-4096
-  eval $(docker-machine env convnet-cell-detection-4096) #configure shell
+  docker-machine create -d virtualbox --virtualbox-memory 8192 convnet-cell-detection-8192
+  docker-machine start convnet-cell-detection-8192
+  eval $(docker-machine env convnet-cell-detection-8192) #configure shell
   docker run hello-world #check that everything is running properly
   ```
   
@@ -75,7 +81,7 @@ https://www.continuum.io/downloads
   docker pull jpwu/znn:v0.1.4
   ```
   
-###FIJI 
+####FIJI 
   FIJI (FIJI Is Just ImageJ) is an image processing package. FIJI is *not* explicitly required for our pipeline, but it is the best way to view multipage TIFF videos and hand-label cells-of-interest for training.  
 
 Install Fiji using the links provided here:  
@@ -150,7 +156,9 @@ The training component of the pipeline trains a convnet using ZNN in a Docker vi
 
 This command will start a docker image and begin ZNN training. It will print the training iteration and the current pixel error periodically. The trained network is automatically saved every 1000 iterations.  Training will continue until you press `ctrl-c` or it reaches the value of the `max_iter` parameter of the configuration file. If you re-run the training command, it will resume training at the last saved iteration. If you wish to restart training, you will need to delete the saved `.h5` files in the `labeled_training_output` directory. If you are running the pipeline on a server, we suggest you use a session manager such as `tmux` to ensure that training is not interrupted if your connection to the server is lost.  
 
-Once you stop training, a forward pass is automatically run on the training data. The resulting files are saved in the `labeled_training_ouput/<training|validation|test>` subdirectories of your experiment directory. The files ending with `_output_0.tif` are images with lighter pixels having higher probabilities of being inside a cell. These are the files used for the rest of the pipeline.
+##### Forward Pass
+
+The forward pass uses the trained network to label the input images with probabilities of being inside an ROI.  You can run just the forward pass component of the pipeline with the command `python pipeline.py forward <config file path>`. For the example experiment, this would be `python pipeline.py forward ../data/example/main_config.cfg`. The resulting files are saved in the `labeled_training_ouput/` subdirectory of your experiment directory. The files are sorted into `training|validation|test` directories in the first step of postprocessing. The files ending with `_output_0.tif` are images with lighter pixels having higher probabilities of being inside a cell.  These are the files used for the rest of the pipeline.
 
 ##### Postprocessing
 
@@ -209,11 +217,11 @@ You can use a different network architecture than the default (2+1)D network as 
 
 1. Create (or use an existing) `.znn` file in the `ConvnetCellDetection/celldetection_znn/` directory.  We have provided `.znn` files for the (2+1)D network (`2plus1d.znn`) and the 2D network (`2d.znn`) described in the [NIPS paper](#citing) and for a small one-level network for testing and debugging (`N1.znn`). The [ZNN documentation](http://znn-release.readthedocs.io/en/latest/index.html) describes the `.znn` format for defining a network architecture in detail. 
 
-2. Replace all instances of "2plus1d" in the `main_config.cfg` file for your experiment with the name of the new `.znn` file.
+2. Replace all 3 instances of "2plus1d" in the `main_config.cfg` file for your experiment with the name of the new `.znn` file.
 
 ##  Parameter Descriptions
 
-The `main_config.cfg` configuration file contains many parameters that will not need to be changed for general use. However, advanced users may wish to adjust these parameters for particular use cases. The default values are stored in the template `main_config.cfg` in the `src/` directory.  Please [contact us](#contributors) if you have specific questions about these parameters or other aspects of the ConvnetCellDetection pipeline. 
+The `main_config.cfg` configuration file for each experiment contains many parameters that will not need to be changed for general use. However, advanced users may wish to adjust these parameters for particular use cases. The default values are stored in the template `main_config.cfg` in the `src/` directory.  Please [contact us](#contributors) if you have specific questions about these parameters or other aspects of the ConvnetCellDetection pipeline. 
 
 general
 
@@ -257,6 +265,7 @@ forward
 
 docker
 
+- use_docker_machine = [1 or 0]. 1 if the ZNN Docker container needs to run inside a VirtualBox virtual machine (e.g. you are running ConvnetCellDetection on your personal computer. 0 if the pipeline is being executed on a machine that can start Docker containers directly (e.g. an Amazon EC2 instance with the Docke daemon running).
 - memory = memory (in MB) to allocate to the docker virtual machine. Changing this will create a new docker virtual machine and take longer on the first training or forward pass with the updated memory value
 - machine_name = prefix of docker virtual machine -- the complete name is machine_name + '-' + memory
 - container_name = name of docker container with ZNN
