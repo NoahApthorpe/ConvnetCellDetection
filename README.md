@@ -219,6 +219,10 @@ You can use a different network architecture than the default (2+1)D network as 
 
 2. Replace all 3 instances of "2plus1d" in the `main_config.cfg` file for your experiment with the name of the new `.znn` file.
 
+3. Change the `filter_size` parameter in the `main_config.cfg` file for your experiment to the size of the convolutional filters for the new network
+
+4. Set the `is_squashing` parameter in the `main_config.cfg` file for your experiment to 1 if the new network takes 3D input or to 0 if the new network takes 2D input
+
 ##  Parameter Descriptions
 
 The `main_config.cfg` configuration file for each experiment contains many parameters that will not need to be changed for general use. However, advanced users may wish to adjust these parameters for particular use cases. The default values are stored in the template `main_config.cfg` in the `src/` directory.  Please [contact us](#contributors) if you have specific questions about these parameters or other aspects of the ConvnetCellDetection pipeline. 
@@ -244,7 +248,6 @@ network
 
 - net_arch_fpath = absolute path of network architecture `.znn` file
 - filter_size = size of one side of square convnet filters (pixels)
-- field_of_view = size of one side of square network field of view for calculating omitted border around each video (pixels)
 - is_squashing = "yes" for (2+1)D or other network that takes 3D input, "no" otherwise.
 
 training
