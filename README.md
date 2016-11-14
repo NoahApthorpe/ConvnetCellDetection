@@ -47,7 +47,7 @@ The Convnet Cell Detection tool uses the ZNN convolutional network implementatio
 ## Installation
 
 ### Amazon AMI
-The easiest way to use the Convnet Cell Detection pipeline is with the Amazon EC2 AMI here.  We recommend launching the AMI in an EC2 instance with at least 32GB of RAM (we use a c4.8xlarge instance).  The ConvnetCellDetection repository is in the home directory of the AMI and all dependencies are pre-installed. We suggest you use a session manager such as `tmux` to ensure that training is not interrupted if your connection to the EC2 instance is lost.
+The easiest way to use the Convnet Cell Detection pipeline is with the [Amazon EC2 AMI ami-a2f8d1b5](https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#LaunchInstanceWizard:ami=ami-a2f8d1b5).  We recommend launching the AMI in an EC2 instance with at least 32GB of RAM (we use a c4.8xlarge instance).  The ConvnetCellDetection repository is in the home directory of the AMI and all dependencies are pre-installed. We suggest you use a session manager such as `tmux` to ensure that training is not interrupted if your connection to the EC2 instance is lost.
 
 ### Local Install
 The Convnet Cell Detection pipeline can also be installed and run on your computer or server. The pipeline relies on a number of software packages, all of which are free and open source. Please follow the instructions below to install each package. 
