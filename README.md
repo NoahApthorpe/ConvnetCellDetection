@@ -31,7 +31,7 @@ Please feel free to send us emails with questions, comments, or bug-reports.  In
 
 ## Citing
 We encourage the use of this tool for research and are excited to see Convnet Cell Detection being applied to experimental workflows. If you publish the results of research using this tool or any of the code contained in this repository, we ask that you cite the following paper:
--  N. Apthorpe, et al. "Automatic neuron detection in microscopy data using convolutional networks." *Advances in Neural Information Processing Systems.* 2016. 
+-  N. Apthorpe, et al. "Automatic neuron detection in calcium imaging data using convolutional networks." *Advances in Neural Information Processing Systems.* 2016. 
 
 ## Overview
 Convnet Cell Detection is a data processing pipeline for automatically detecting cells in microscope images using convolutional neural networks (convnets).  We developed and tested this pipeline to find neuron cell bodies in two-photon microscope images, but believe that the technique will be be effective for other cellular microscopy applications as well. 
