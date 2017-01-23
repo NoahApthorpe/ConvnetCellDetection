@@ -116,7 +116,7 @@ The `main_config.cfg` file in each experiment directory contains customizeable p
 
 The first parameter (`data_dir`) points to the subdirectory of your experiment containing the data you wish to process on the next run of the pipeline. The `data_dir` parameter for training should be a `labeled` directory (e.g. `../data/example/labeled`). When you are ready to run a forward pass on new (non-labeled) data, you will need to change this to point to a new subdirectory of your experiment (see [Label new data](#label-new-data)).
 
-If you are running Convnet Cell Detection on a machine that can start Docker containers directly (e.g. an Amazon EC2 instance with the Docker daemon running), change the `use_docker_machine`parameter to 0. Otherwise, a VirtualBox virtual machine will be started to run the docker container. 
+If you are running Convnet Cell Detection on a machine that can start Docker containers directly (e.g. an Amazon EC2 instance), change the `use_docker_machine`parameter to 0. Otherwise, a VirtualBox virtual machine will be started to run the docker container. 
 
 Details about further customization using other parameters in the `main_config.cfg` file are provided in the [Detailed Parameter Configuration](#detailed-parameter-configuration) section.
 
@@ -224,6 +224,8 @@ You can use a different network architecture than the default (2+1)D network as 
 3. Change the `filter_size` parameter in the `main_config.cfg` file for your experiment to the size of the convolutional filters for the new network
 
 4. Set the `is_squashing` parameter in the `main_config.cfg` file for your experiment to 1 if the new network takes 3D input or to 0 if the new network takes 2D input
+
+5. Set the `time_equalize` parameter in the `main_config.cfg` file for your experiment to at most the minimum number of time frames in a video in your dataset (1 if your input is 2D). 
 
 ##  Parameter Descriptions
 
