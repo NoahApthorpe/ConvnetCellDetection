@@ -100,7 +100,7 @@ All `python` commands must be run from the `src` directory of the `ConvnetCellDe
 
 ### Set up new experiment
 
-Run `python pipeline.py <experiment_name>` to create a new folder in the `data` directory for your experiment. This folder will be pre-initialized with a `main_config.cfg` configuration file and a `labeled` directory to hold pre-labeled training, valdiation, and testing data.
+Run `python pipeline.py create <experiment_name>` to create a new folder in the `data` directory for your experiment. This folder will be pre-initialized with a `main_config.cfg` configuration file and a `labeled` directory to hold pre-labeled training, valdiation, and testing data.
 
 Each "experiment" directory in `data/` corresponds to a single convnet. Once the convnet is trained, you can use it to label as much new data as you wish (see [Label new data](#label-new-data))
 
