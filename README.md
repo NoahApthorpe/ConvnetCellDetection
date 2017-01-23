@@ -116,6 +116,8 @@ The `main_config.cfg` file in each experiment directory contains customizeable p
 
 The first parameter (`data_dir`) points to the subdirectory of your experiment containing the data you wish to process on the next run of the pipeline. The `data_dir` parameter for training should be a `labeled` directory (e.g. `../data/example/labeled`). When you are ready to run a forward pass on new (non-labeled) data, you will need to change this to point to a new subdirectory of your experiment (see [Label new data](#label-new-data)).
 
+If you are running Convnet Cell Detection on a machine that can start Docker containers directly (e.g. an Amazon EC2 instance with the Docker daemon running), change the `use_docker_machine`parameter to 0. Otherwise, a VirtualBox virtual machine will be started to run the docker container. 
+
 Details about further customization using other parameters in the `main_config.cfg` file are provided in the [Detailed Parameter Configuration](#detailed-parameter-configuration) section.
 
 ### Provide training data
@@ -268,7 +270,7 @@ forward
 
 docker
 
-- use_docker_machine = [1 or 0]. 1 if the ZNN Docker container needs to run inside a VirtualBox virtual machine (e.g. you are running ConvnetCellDetection on your personal computer. 0 if the pipeline is being executed on a machine that can start Docker containers directly (e.g. an Amazon EC2 instance with the Docke daemon running).
+- use_docker_machine = [1 or 0]. 1 if the ZNN Docker container needs to run inside a VirtualBox virtual machine (e.g. you are running ConvnetCellDetection on your personal computer. 0 if the pipeline is being executed on a machine that can start Docker containers directly (e.g. an Amazon EC2 instance with the Docker daemon running).
 - memory = memory (in MB) to allocate to the docker virtual machine. Changing this will create a new docker virtual machine and take longer on the first training or forward pass with the updated memory value
 - machine_name = prefix of docker virtual machine -- the complete name is machine_name + '-' + memory
 - container_name = name of docker container with ZNN
